@@ -9,7 +9,13 @@ The other callables defined in this module are internal only. Anything useful
 to individuals leveraging Fabric as a library, should be kept elsewhere.
 """
 import getpass
-from operator import isMappingType
+import six
+from six import string_types
+if six.PY3:
+    import collections
+    from functools import reduce
+else:
+    from operator import isMappingType
 from optparse import OptionParser
 import os
 import sys
@@ -29,7 +35,7 @@ from fabric.utils import abort, indent, warn, _pty_size
 # One-time calculation of "all internal callables" to avoid doing this on every
 # check of a given fabfile callable (in is_classic_task()).
 _modules = [api, project, files, console, colors]
-_internals = reduce(lambda x, y: x + filter(callable, vars(y).values()),
+_internals = reduce(lambda x, y: x + list(filter(callable, vars(y).values())),
     _modules,
     []
 )
@@ -389,7 +395,7 @@ def _print_docstring(docstrings, name):
     if not docstrings:
         return False
     docstring = crawl(name, state.commands).__doc__
-    if isinstance(docstring, basestring):
+    if isinstance(docstring, string_types):
         return docstring
 
 
@@ -622,7 +628,7 @@ def main(fabfile_locations=None):
         # Handle --hosts, --roles, --exclude-hosts (comma separated string =>
         # list)
         for key in ['hosts', 'roles', 'exclude_hosts']:
-            if key in state.env and isinstance(state.env[key], basestring):
+            if key in state.env and isinstance(state.env[key], string_types):
                 state.env[key] = state.env[key].split(',')
 
         # Feed the env.tasks : tasks that are asked to be executed.

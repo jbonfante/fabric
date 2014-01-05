@@ -1,6 +1,8 @@
 from __future__ import with_statement
 
-from contextlib import nested
+import six
+if six.PY3: from contextlib import ExitStack
+else: from contextlib import nested
 
 from fabric.api import abort, hide, local, settings, task
 
@@ -9,13 +11,18 @@ import fabric.version
 # But nothing is stopping us from making a convenient binding!
 _version = fabric.version.get_version
 
-from utils import msg
-
+from .utils import msg
 
 def _seek_version(cmd, txt):
-    with nested(hide('running'), msg(txt)):
-        cmd = cmd % _version('short')
-        return local(cmd, capture=True)
+    if six.PY3:
+        @contextmanager
+        def settings(*args, **kwargs):
+            with ExitStack() as stack:
+                yield tuple(stack.enter_context(cm) for cm in [hide('running'), msg(txt)])
+    else:
+        with nested(hide('running'), msg(txt)):
+            cmd = cmd % _version('short')
+            return local(cmd, capture=True)
 
 
 def current_version_is_tagged():

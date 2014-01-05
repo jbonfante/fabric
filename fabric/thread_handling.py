@@ -1,6 +1,6 @@
 import threading
 import sys
-
+import six
 
 class ThreadHandler(object):
     def __init__(self, name, callable, *args, **kwargs):
@@ -22,4 +22,8 @@ class ThreadHandler(object):
     def raise_if_needed(self):
         if self.exception:
             e = self.exception
-            raise e[0], e[1], e[2]
+            raise e[0](e[1]).with_traceback(e[2])
+            #if six.PY3:
+            #    raise e[0](e[1]).with_traceback(e[2])
+            #else:
+            #    raise e[0], e[1], e[2]

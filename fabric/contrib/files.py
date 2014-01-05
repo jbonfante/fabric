@@ -8,7 +8,9 @@ import hashlib
 import tempfile
 import re
 import os
-from StringIO import StringIO
+import six
+if six.PY3: from io import StringIO
+else: from StringIO import StringIO
 
 from fabric.api import *
 from fabric.utils import apply_lcwd

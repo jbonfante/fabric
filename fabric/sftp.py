@@ -5,6 +5,7 @@ import os
 import posixpath
 import stat
 import re
+import six
 from fnmatch import filter as fnfilter
 
 from fabric.state import output, connections, env
@@ -79,7 +80,7 @@ class SFTP(object):
             # Note that listdir and error are globals in this module due to
             # earlier import-*.
             names = self.ftp.listdir(top)
-        except Exception, err:
+        except Exception as err:
             if onerror is not None:
                 onerror(err)
             return
@@ -233,11 +234,18 @@ class SFTP(object):
             # Cast to octal integer in case of string
             if isinstance(lmode, basestring):
                 lmode = int(lmode, 8)
-            lmode = lmode & 07777
+
+            lmode = lmode & 0o7777
+            #if six.PY3:
+            #    lmode = lmode & 0o7777
+            #else:
+            #    lmode = lmode & 07777
+
             rmode = rattrs.st_mode
             # Only bitshift if we actually got an rmode
             if rmode is not None:
-                rmode = (rmode & 07777)
+                rmode = (rmode & 0o7777)
+                #rmode = (rmode & 07777)
             if lmode != rmode:
                 if use_sudo:
                     with hide('everything'):
