@@ -12,7 +12,7 @@ import fabric.network
 from fabric.network import ssh, normalize
 from fabric.utils import RingBuffer
 from fabric.exceptions import CommandTimeout
-
+import six
 
 if win32:
     import msvcrt
@@ -156,7 +156,7 @@ class OutputLooper(object):
                     expected, response = self._get_prompt_response()
                     if expected:
                         del self.capture[-1 * len(expected):]
-                        self.chan.sendall(str(response) + '\n')
+                        self.chan.sendall(six.text_type(response) + '\n')
                     else:
                         prompt = _endswith(self.capture, env.sudo_prompt)
                         try_again = (_endswith(self.capture, env.again_prompt + '\n')
@@ -217,7 +217,7 @@ class OutputLooper(object):
         Iterate through the request prompts dict and return the response and
         original request if we find a match
         """
-        for tup in env.prompts.iteritems():
+        for tup in six.iteritems(env.prompts):
             if _endswith(self.capture, tup[0]):
                 return tup
         return None, None

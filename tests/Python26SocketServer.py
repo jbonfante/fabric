@@ -508,7 +508,7 @@ class ForkingMixIn:
                 continue
             try:
                 self.active_children.remove(pid)
-            except ValueError, e:
+            except ValueError as e:
                 raise ValueError('%s. x=%d and list=%r' % \
                                     (e.message, pid, self.active_children))
 
@@ -685,9 +685,9 @@ class DatagramRequestHandler(BaseRequestHandler):
 
     def setup(self):
         try:
-            from cStringIO import StringIO
+            from io import BytesIO as StringIO
         except ImportError:
-            from StringIO import StringIO
+            from io import StringIO
         self.packet, self.socket = self.request
         self.rfile = StringIO(self.packet)
         self.wfile = StringIO()

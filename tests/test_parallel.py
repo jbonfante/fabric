@@ -51,7 +51,7 @@ class TestParallel(FabricTest):
                 run("ls /")
                 if env.host_string == host2:
                     raise OhNoesException
-            
+
             execute(mytask, hosts=[host1, host2])
 
     @server(port=2200)

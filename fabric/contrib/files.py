@@ -9,6 +9,7 @@ import tempfile
 import re
 import os
 import six
+from six import string_types
 if six.PY3: from io import StringIO
 else: from StringIO import StringIO
 
@@ -390,7 +391,7 @@ def append(filename, text, use_sudo=False, partial=False, escape=True,
     """
     func = use_sudo and sudo or run
     # Normalize non-list input to be a list
-    if isinstance(text, basestring):
+    if isinstance(text, string_types):
         text = [text]
     for line in text:
         regex = '^' + _escape_for_regex(line)  + ('' if partial else '$')

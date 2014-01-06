@@ -16,6 +16,7 @@ import os
 import sys
 import types
 from datetime import datetime
+import six
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -225,7 +226,7 @@ latex_documents = [
 def unwrap_decorated_functions():
     from fabric import operations, context_managers
     for module in [context_managers, operations]:
-        for name, obj in vars(module).iteritems():
+        for name, obj in six.iteritems(vars(module)):
             if (
                 # Only function objects - just in case some real object showed
                 # up that had .undecorated

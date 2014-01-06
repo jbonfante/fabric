@@ -9,7 +9,7 @@ from optparse import make_option
 from fabric.network import HostConnectionCache, ssh
 from fabric.version import get_version
 from fabric.utils import _AliasDict, _AttributeDict
-
+from six import text_type
 
 #
 # Win32 flag
@@ -388,7 +388,7 @@ def default_channel():
     try:
         chan = _open_session()
     except ssh.SSHException as err:
-        if str(err) == 'SSH session not active':
+        if text_type(err) == 'SSH session not active':
             connections[env.host_string].close()
             del connections[env.host_string]
             chan = _open_session()

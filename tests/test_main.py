@@ -2,7 +2,13 @@ from __future__ import with_statement
 
 import copy
 from functools import partial
-from operator import isMappingType
+import six
+if six.PY3:
+    def isMappingType(obj):
+        import collections
+        return isinstance(obj, collections.Mapping)
+else:
+    from operator import isMappingType
 import os
 import sys
 from contextlib import contextmanager
@@ -35,7 +41,7 @@ def load_fabfile(*args, **kwargs):
 
 def test_argument_parsing():
     for args, output in [
-        # Basic 
+        # Basic
         ('abc', ('abc', [], {}, [], [], [])),
         # Arg
         ('ab:c', ('ab', ['c'], {}, [], [], [])),
@@ -543,7 +549,7 @@ def name_to_task(name):
 
 def strings_to_tasks(d):
     ret = {}
-    for key, value in d.iteritems():
+    for key, value in six.iteritems(d):
         if isMappingType(value):
             val = strings_to_tasks(value)
         else:

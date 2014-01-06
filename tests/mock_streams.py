@@ -3,7 +3,7 @@ Stand-alone stream mocking decorator for easier imports.
 """
 from functools import wraps
 import sys
-from StringIO import StringIO  # No need for cStringIO at this time
+from io import StringIO  # No need for cStringIO at this time
 
 
 class CarbonCopy(StringIO):
@@ -81,5 +81,3 @@ def mock_streams(which):
                     del sys.stdall
         return inner_wrapper
     return mocked_streams_decorator
-
-

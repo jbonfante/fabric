@@ -5,6 +5,7 @@ import inspect
 import sys
 import textwrap
 import six
+from six import iteritems
 
 from fabric import state
 from fabric.utils import abort, warn, error
@@ -393,7 +394,7 @@ def execute(task, *args, **kwargs):
             # This prevents Fabric from continuing on to any other tasks.
             # Otherwise, pull in results from the child run.
             ran_jobs = jobs.run()
-            for name, d in ran_jobs.iteritems():
+            for name, d in iteritems(ran_jobs):
                 if d['exit_code'] != 0:
                     if isinstance(d['results'], BaseException):
                         error(err, exception=d['results'])

@@ -12,8 +12,8 @@ from fabric.operations import run, local
 
 from utils import mock_streams, FabricTest
 from server import server
-from StringIO import StringIO
-
+from io import StringIO
+from six import b, u
 
 #
 # cd()
@@ -225,6 +225,7 @@ class TestPathManager(FabricTest):
     def via_local(self):
         with hide('everything'):
             return local("echo $PATH", capture=True)
+        #with hide('everything'): local("echo $PATH", capture=True)
 
     def test_lack_of_path_has_default_local_path(self):
         """

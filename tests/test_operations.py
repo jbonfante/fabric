@@ -4,8 +4,10 @@ import os
 import shutil
 import sys
 import types
-from contextlib import nested
-from StringIO import StringIO
+import six
+if six.PY3: from contextlib import ExitStack
+else: from contextlib import nested
+from io import StringIO
 
 import unittest
 import random
@@ -485,7 +487,7 @@ class TestFileTransfers(FabricTest):
         """
         with hide('everything'):
             get('tree', self.tmpdir)
-        leaves = filter(lambda x: x[0].startswith('/tree'), FILES.items())
+        leaves = list(filter(lambda x: x[0].startswith('/tree'), FILES.items()))
         for path, contents in leaves:
             eq_contents(self.path(path[1:]), contents)
 
@@ -498,7 +500,7 @@ class TestFileTransfers(FabricTest):
         try:
             with hide('everything'):
                 get('tree')
-            leaves = filter(lambda x: x[0].startswith('/tree'), FILES.items())
+            leaves = list(filter(lambda x: x[0].startswith('/tree'), FILES.items()))
             for path, contents in leaves:
                 path = os.path.join(dirname, path[1:])
                 eq_contents(path, contents)
@@ -603,7 +605,7 @@ class TestFileTransfers(FabricTest):
     @server(port=2201)
     def test_get_from_multiple_servers(self):
         ports = [2200, 2201]
-        hosts = map(lambda x: '127.0.0.1:%s' % x, ports)
+        hosts = list(map(lambda x: '127.0.0.1:%s' % x, ports))
         with settings(all_hosts=hosts):
             for port in ports:
                 with settings(
@@ -879,6 +881,7 @@ class TestFileTransfers(FabricTest):
     # Interactions with cd()
     #
     @server()
+    @contextmanager
     def test_cd_should_apply_to_put(self):
         """
         put() should honor env.cwd for relative remote paths
@@ -888,17 +891,24 @@ class TestFileTransfers(FabricTest):
         local = self.path(f)
         with open(local, 'w') as fd:
             fd.write('test')
-        with nested(cd(d), hide('everything')):
+        #with nested(cd(d), hide('everything')):
+        #    put(local, f)
+        with ExitStack() as stack:
+            for cm in [cd(d), hide('everything')]: stack.enter_context(cm)
             put(local, f)
         assert self.exists_remotely('%s/%s' % (d, f))
 
     @server(files={'/tmp/test.txt': 'test'})
+    @contextmanager
     def test_cd_should_apply_to_get(self):
         """
         get() should honor env.cwd for relative remote paths
         """
         local = self.path('test.txt')
-        with nested(cd('/tmp'), hide('everything')):
+        #with nested(cd('/tmp'), hide('everything')):
+        #    get('test.txt', local)
+        with ExitStack() as stack:
+            for cm in [cd('/tmp'), hide('everything')]: stack.enter_context(cm)
             get('test.txt', local)
         assert os.path.exists(local)
 
@@ -989,7 +999,9 @@ def test_local_output_and_capture():
                     hides.append('stderr')
                 else:
                     shows.append('stderr')
-                with nested(hide(*hides), show(*shows)):
+                #with nested(hide(*hides), show(*shows)):
+                with ExitStack() as stack:
+                    for cm in [hide(*hides), show(*shows)]: stack.enter_context(cm)
                     d = "local(): capture: %r, stdout: %r, stderr: %r" % (
                         capture, stdout, stderr
                     )

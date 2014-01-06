@@ -16,7 +16,7 @@ from fabric.exceptions import NetworkError
 
 from utils import eq_, FabricTest, aborts, mock_streams
 from server import server
-
+import six
 
 def test_base_task_provides_undefined_name():
     task = Task()
@@ -167,7 +167,7 @@ def dict_contains(superset, subset):
     """
     Assert that all key/val pairs in dict 'subset' also exist in 'superset'
     """
-    for key, value in subset.iteritems():
+    for key, value in six.iteritems(subset):
         ok_(key in superset)
         eq_(superset[key], value)
 
@@ -514,9 +514,9 @@ class TestTaskDetails(unittest.TestCase):
 """Displaying detailed information for task 'mytask':
 
     This is a multi line docstring.
-    
+
     For reals.
-    
+
     Arguments: arg1
 
 """

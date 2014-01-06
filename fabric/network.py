@@ -12,11 +12,11 @@ import time
 import socket
 import sys
 import six
-if six.PY3:
-    from io import StringIO
-else:
-    from StringIO import StringIO
-
+from six import string_types, text_type
+if six.PY3: from io import StringIO
+else: from StringIO import StringIO
+try: input = raw_input
+except NameError: pass
 
 from fabric.auth import get_password, set_password
 from fabric.utils import abort, handle_prompt_abort, warn
@@ -210,16 +210,16 @@ def key_filenames():
     from fabric.state import env
     keys = env.key_filename
     # For ease of use, coerce stringish key filename into list
-    if isinstance(env.key_filename, basestring) or env.key_filename is None:
+    if isinstance(env.key_filename, string_types) or env.key_filename is None:
         keys = [keys]
     # Strip out any empty strings (such as the default value...meh)
-    keys = filter(bool, keys)
+    keys = list(filter(bool, keys))
     # Honor SSH config
     conf = ssh_config()
     if 'identityfile' in conf:
         # Assume a list here as we require Paramiko 1.10+
         keys.extend(conf['identityfile'])
-    return map(os.path.expanduser, keys)
+    return list(map(os.path.expanduser, keys))
 
 
 def key_from_env(passphrase=None):
@@ -252,9 +252,9 @@ def key_from_env(passphrase=None):
 
 def parse_host_string(host_string):
     # Split host_string to user (optional) and host/port
-    user_hostport = host_string.rsplit('@', 1)
+    user_hostport = text_type(host_string).rsplit('@', 1)
     hostport = user_hostport.pop()
-    user = user_hostport[0] if user_hostport and user_hostport[0] else None
+    user = text_type(user_hostport[0]) if user_hostport and user_hostport[0] else None
 
     # Split host/port string to host and optional port
     # For IPv6 addresses square brackets are mandatory for host/port separation
@@ -267,7 +267,7 @@ def parse_host_string(host_string):
         # Hostname or IPv4 address
         host_port = hostport.rsplit(':', 1)
         host = host_port.pop(0) or None
-        port = host_port[0] if host_port and host_port[0] else None
+        port = text_type(host_port[0]) if host_port and host_port[0] else None
 
     return {'user': user, 'host': host, 'port': port}
 
@@ -392,7 +392,7 @@ def connect(user, host, port, cache, seek_gateway=True):
         Whether to try setting up a gateway socket for this connection. Used so
         the actual gateway connection can prevent recursion.
     """
-    from state import env, output
+    from .state import env, output
 
     #
     # Initialization
@@ -560,7 +560,7 @@ def connect(user, host, port, cache, seek_gateway=True):
             # Override eror msg if we were retrying other errors
             if not_timeout:
                 msg = "Low level socket error connecting to host %s on port %s: %s" % (
-                    host, port, e[1]
+                    host, port, e.args[1]
                 )
             # Here, all attempts failed. Tweak error msg to show # tries.
             # TODO: find good humanization module, jeez
@@ -637,7 +637,7 @@ def needs_host(func):
     def host_prompting_wrapper(*args, **kwargs):
         while not env.get('host_string', False):
             handle_prompt_abort("the target host connection string")
-            host_string = raw_input("No hosts found. Please specify (single)"
+            host_string = input("No hosts found. Please specify (single)"
                                     " host string for connection: ")
             env.update(to_dict(host_string))
         return func(*args, **kwargs)

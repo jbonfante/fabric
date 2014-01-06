@@ -6,6 +6,7 @@ import os
 import sys
 import textwrap
 from traceback import format_exc
+from six import binary_type, text_type, b, u, text_type
 
 def abort(msg):
     """
@@ -22,10 +23,10 @@ def abort(msg):
     if not env.colorize_errors:
         red  = lambda x: x
     else:
-        from colors import red
+        from .colors import red
 
     if output.aborts:
-        sys.stderr.write(red("\nFatal error: %s\n" % str(msg)))
+        sys.stderr.write(red("\nFatal error: %s\n" % text_type(msg)))
         sys.stderr.write(red("\nAborting.\n"))
 
     if env.abort_exception:
@@ -48,7 +49,7 @@ def warn(msg):
     if not env.colorize_errors:
         magenta = lambda x: x
     else:
-        from colors import magenta
+        from .colors import magenta
 
     if output.warnings:
         sys.stderr.write(magenta("\nWarning: %s\n\n" % msg))
@@ -110,7 +111,7 @@ def puts(text, show_prefix=None, end="\n", flush=False):
         prefix = ""
         if env.host_string and show_prefix:
             prefix = "[%s] " % env.host_string
-        sys.stdout.write(prefix + str(text) + end)
+        sys.stdout.write(prefix + text_type(text) + end)
         if flush:
             sys.stdout.flush()
 
@@ -318,7 +319,7 @@ def error(message, func=None, exception=None, stdout=None, stderr=None):
             underlying = exception.strerror
         else:
             underlying = exception
-        message += "\n\nUnderlying exception:\n" + indent(str(underlying))
+        message += "\n\nUnderlying exception:\n" + indent(text_type(underlying))
     if func is abort:
         if stdout and not fabric.state.output.stdout:
             message += _format_error_output("Standard output", stdout)
@@ -329,7 +330,7 @@ def error(message, func=None, exception=None, stdout=None, stderr=None):
 
 def _format_error_output(header, body):
     term_width = _pty_size()[1]
-    header_side_length = (term_width - (len(header) + 2)) / 2
+    header_side_length = int((term_width - (len(header) + 2)) / 2)
     mark = "="
     side = mark * header_side_length
     return "\n\n%s %s %s\n\n%s\n\n%s" % (

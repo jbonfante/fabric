@@ -36,7 +36,7 @@ Context managers for use with the ``with`` statement.
 from contextlib import contextmanager
 import six
 if six.PY3: from contextlib import ExitStack
-else: from contextlib import nested
+else: from contextlib2 import ExitStack
 import sys
 import socket
 import select
@@ -162,99 +162,93 @@ def _setenv(variables):
             state.env.update(previous)
             for key in new:
                 del state.env[key]
-if six.PY3:
-    @contextmanager
-    def settings(*args, **kwargs):
-        managers = list(args)
-        if kwargs:
-            managers.append(_setenv(kwargs))
-        with ExitStack() as stack:
-            yield tuple(stack.enter_context(cm) for cm in managers)
-else:
-    def settings(*args, **kwargs):
-        """
-        Nest context managers and/or override ``env`` variables.
 
-        `settings` serves two purposes:
+@contextmanager
+def settings(*args, **kwargs):
+    """
+    Nest context managers and/or override ``env`` variables.
 
-        * Most usefully, it allows temporary overriding/updating of ``env`` with
-          any provided keyword arguments, e.g. ``with settings(user='foo'):``.
-          Original values, if any, will be restored once the ``with`` block closes.
+    `settings` serves two purposes:
 
-            * The keyword argument ``clean_revert`` has special meaning for
-              ``settings`` itself (see below) and will be stripped out before
-              execution.
+    * Most usefully, it allows temporary overriding/updating of ``env`` with
+      any provided keyword arguments, e.g. ``with settings(user='foo'):``.
+      Original values, if any, will be restored once the ``with`` block closes.
 
-        * In addition, it will use `contextlib.nested`_ to nest any given
-          non-keyword arguments, which should be other context managers, e.g.
-          ``with settings(hide('stderr'), show('stdout')):``.
+        * The keyword argument ``clean_revert`` has special meaning for
+          ``settings`` itself (see below) and will be stripped out before
+          execution.
 
-        .. _contextlib.nested: http://docs.python.org/library/contextlib.html#contextlib.nested
+    * In addition, it will use `contextlib.nested`_ to nest any given
+      non-keyword arguments, which should be other context managers, e.g.
+      ``with settings(hide('stderr'), show('stdout')):``.
 
-        These behaviors may be specified at the same time if desired. An example
-        will hopefully illustrate why this is considered useful::
+    .. _contextlib.nested: http://docs.python.org/library/contextlib.html#contextlib.nested
 
-            def my_task():
-                with settings(
-                    hide('warnings', 'running', 'stdout', 'stderr'),
-                    warn_only=True
-                ):
-                    if run('ls /etc/lsb-release'):
-                        return 'Ubuntu'
-                    elif run('ls /etc/redhat-release'):
-                        return 'RedHat'
+    These behaviors may be specified at the same time if desired. An example
+    will hopefully illustrate why this is considered useful::
 
-        The above task executes a `run` statement, but will warn instead of
-        aborting if the ``ls`` fails, and all output -- including the warning
-        itself -- is prevented from printing to the user. The end result, in this
-        scenario, is a completely silent task that allows the caller to figure out
-        what type of system the remote host is, without incurring the handful of
-        output that would normally occur.
+        def my_task():
+            with settings(
+                hide('warnings', 'running', 'stdout', 'stderr'),
+                warn_only=True
+            ):
+                if run('ls /etc/lsb-release'):
+                    return 'Ubuntu'
+                elif run('ls /etc/redhat-release'):
+                    return 'RedHat'
 
-        Thus, `settings` may be used to set any combination of environment
-        variables in tandem with hiding (or showing) specific levels of output, or
-        in tandem with any other piece of Fabric functionality implemented as a
-        context manager.
+    The above task executes a `run` statement, but will warn instead of
+    aborting if the ``ls`` fails, and all output -- including the warning
+    itself -- is prevented from printing to the user. The end result, in this
+    scenario, is a completely silent task that allows the caller to figure out
+    what type of system the remote host is, without incurring the handful of
+    output that would normally occur.
 
-        If ``clean_revert`` is set to ``True``, ``settings`` will **not** revert
-        keys which are altered within the nested block, instead only reverting keys
-        whose values remain the same as those given. More examples will make this
-        clear; below is how ``settings`` operates normally::
+    Thus, `settings` may be used to set any combination of environment
+    variables in tandem with hiding (or showing) specific levels of output, or
+    in tandem with any other piece of Fabric functionality implemented as a
+    context manager.
 
-            # Before the block, env.parallel defaults to False, host_string to None
-            with settings(parallel=True, host_string='myhost'):
-                # env.parallel is True
-                # env.host_string is 'myhost'
-                env.host_string = 'otherhost'
-                # env.host_string is now 'otherhost'
-            # Outside the block:
-            # * env.parallel is False again
-            # * env.host_string is None again
+    If ``clean_revert`` is set to ``True``, ``settings`` will **not** revert
+    keys which are altered within the nested block, instead only reverting keys
+    whose values remain the same as those given. More examples will make this
+    clear; below is how ``settings`` operates normally::
 
-        The internal modification of ``env.host_string`` is nullified -- not always
-        desirable. That's where ``clean_revert`` comes in::
+        # Before the block, env.parallel defaults to False, host_string to None
+        with settings(parallel=True, host_string='myhost'):
+            # env.parallel is True
+            # env.host_string is 'myhost'
+            env.host_string = 'otherhost'
+            # env.host_string is now 'otherhost'
+        # Outside the block:
+        # * env.parallel is False again
+        # * env.host_string is None again
 
-            # Before the block, env.parallel defaults to False, host_string to None
-            with settings(parallel=True, host_string='myhost', clean_revert=True):
-                # env.parallel is True
-                # env.host_string is 'myhost'
-                env.host_string = 'otherhost'
-                # env.host_string is now 'otherhost'
-            # Outside the block:
-            # * env.parallel is False again
-            # * env.host_string remains 'otherhost'
+    The internal modification of ``env.host_string`` is nullified -- not always
+    desirable. That's where ``clean_revert`` comes in::
 
-        Brand new keys which did not exist in ``env`` prior to using ``settings``
-        are also preserved if ``clean_revert`` is active. When ``False``, such keys
-        are removed when the block exits.
+        # Before the block, env.parallel defaults to False, host_string to None
+        with settings(parallel=True, host_string='myhost', clean_revert=True):
+            # env.parallel is True
+            # env.host_string is 'myhost'
+            env.host_string = 'otherhost'
+            # env.host_string is now 'otherhost'
+        # Outside the block:
+        # * env.parallel is False again
+        # * env.host_string remains 'otherhost'
 
-        .. versionadded:: 1.4.1
-            The ``clean_revert`` kwarg.
-        """
-        managers = list(args)
-        if kwargs:
-            managers.append(_setenv(kwargs))
-        return nested(*managers)
+    Brand new keys which did not exist in ``env`` prior to using ``settings``
+    are also preserved if ``clean_revert`` is active. When ``False``, such keys
+    are removed when the block exits.
+
+    .. versionadded:: 1.4.1
+        The ``clean_revert`` kwarg.
+    """
+    managers = list(args)
+    if kwargs:
+        managers.append(_setenv(kwargs))
+    with ExitStack() as stack:
+        yield tuple(stack.enter_context(cm) for cm in managers)
 
 
 def cd(path):

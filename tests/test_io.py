@@ -4,7 +4,7 @@ from nose.tools import eq_
 
 from fabric.io import OutputLooper
 from fabric.context_managers import settings
-
+from six import text_type
 
 def test_request_prompts():
     """
@@ -14,7 +14,7 @@ def test_request_prompts():
         with settings(prompts=prompts):
             # try to fulfil the OutputLooper interface, only want to test
             # _get_prompt_response. (str has a method upper)
-            ol = OutputLooper(str, 'upper', None, list(txt), None)
+            ol = OutputLooper(text_type, 'upper', None, list(txt), None)
             return ol._get_prompt_response()
 
     prompts = {"prompt2": "response2",

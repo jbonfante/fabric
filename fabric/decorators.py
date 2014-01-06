@@ -3,6 +3,8 @@ Convenience decorators for use in fabfiles.
 """
 from __future__ import with_statement
 
+import six
+from six import string_types
 import types
 from functools import wraps
 
@@ -53,7 +55,7 @@ def _list_annotating_decorator(attribute, *values):
             return func(*args, **kwargs)
         _values = values
         # Allow for single iterable argument as well as *args
-        if len(_values) == 1 and not isinstance(_values[0], basestring):
+        if len(_values) == 1 and not isinstance(_values[0], string_types):
             _values = _values[0]
         setattr(inner_decorator, attribute, list(_values))
         # Don't replace @task new-style task objects with inner_decorator by
@@ -130,7 +132,7 @@ def runs_once(func):
     Any function wrapped with this decorator will silently fail to execute the
     2nd, 3rd, ..., Nth time it is called, and will return the value of the
     original run.
-    
+
     .. note:: ``runs_once`` does not work with parallel task execution.
     """
     @wraps(func)

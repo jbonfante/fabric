@@ -1,6 +1,6 @@
 from __future__ import with_statement
 
-from StringIO import StringIO
+from io import StringIO
 
 from fabric.api import run, path, put, sudo, abort, warn_only, env
 
