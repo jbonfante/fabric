@@ -1,5 +1,5 @@
 from fabric.utils import abort, indent
-from fabric import state
+from . import state
 import six
 from six import string_types
 

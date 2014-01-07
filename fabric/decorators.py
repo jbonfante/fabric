@@ -10,7 +10,8 @@ from functools import wraps
 
 from Crypto import Random
 
-from fabric import tasks
+import fabric
+from . import tasks
 from .context_managers import settings
 
 

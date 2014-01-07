@@ -25,7 +25,7 @@ import sys
 import types
 
 # For checking callables against the API, & easy mocking
-from fabric import api, state, colors
+from . import api, state, colors
 from fabric.contrib import console, files, project
 
 from fabric.network import disconnect_all, ssh

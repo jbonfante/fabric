@@ -7,7 +7,7 @@ import textwrap
 import six
 from six import iteritems
 
-from fabric import state
+from . import state
 from fabric.utils import abort, warn, error
 from fabric.network import to_dict, normalize_to_string, disconnect_all
 from fabric.context_managers import settings

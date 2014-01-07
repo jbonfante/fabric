@@ -1,6 +1,6 @@
 from fabric.api import task
 
-from . import system, db
+import system, db
 
 
 @task

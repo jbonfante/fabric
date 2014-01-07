@@ -1,1 +1,1 @@
-from . import submodule
+import submodule

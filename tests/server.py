@@ -20,6 +20,7 @@ from fabric.thread_handling import ThreadHandler
 from fabric.network import disconnect_all, ssh
 
 from fake_filesystem import FakeFilesystem, FakeFile
+from six import string_types
 
 #
 # Debugging
@@ -408,7 +409,7 @@ def serve_responses(responses, files, passwords, home, pubkeys, port):
             stderr = ""
             status = 0
             sleep = 0
-            if isinstance(result, types.StringTypes):
+            if isinstance(result, string_types):
                 stdout = result
             else:
                 size = len(result)

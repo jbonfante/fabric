@@ -1,1 +1,1 @@
-from . import flat_alias as nested
+import flat_alias as nested

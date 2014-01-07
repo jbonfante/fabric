@@ -1,4 +1,4 @@
-from . import subsubmodule
+import subsubmodule
 
 def classic_task():
     pass
