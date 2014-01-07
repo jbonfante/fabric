@@ -5,8 +5,11 @@ import shutil
 import sys
 import types
 import six
-if six.PY3: from contextlib import ExitStack
-else: from contextlib import nested
+from contextlib2 import ExitStack
+try:
+    from contextlib import nested
+except:
+    pass
 from io import StringIO
 
 import unittest

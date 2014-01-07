@@ -35,14 +35,18 @@ Context managers for use with the ``with`` statement.
 
 from contextlib import contextmanager
 import six
-if six.PY3: from contextlib import ExitStack
-else: from contextlib2 import ExitStack
+from contextlib2 import ExitStack
+try:
+    from contextlib import nested
+except:
+    pass
 import sys
 import socket
 import select
 
 from fabric.thread_handling import ThreadHandler
 from fabric.state import output, win32, connections, env
+import fabric
 from fabric import state
 
 if not win32:

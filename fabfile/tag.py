@@ -1,8 +1,11 @@
 from __future__ import with_statement
 
 import six
-if six.PY3: from contextlib import ExitStack
-else: from contextlib import nested
+from contextlib2 import ExitStack
+try:
+    from contextlib import nested
+except:
+    pass
 try: input = raw_input
 except NameError: pass
 
