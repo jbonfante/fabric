@@ -14,6 +14,9 @@ from six import string_types
 if six.PY3:
     import collections
     from functools import reduce
+    def isMappingType(obj):
+        import collections
+        return isinstance(obj, collections.Mapping)
 else:
     from operator import isMappingType
 from optparse import OptionParser
