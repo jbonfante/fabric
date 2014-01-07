@@ -2,7 +2,7 @@ import os
 import stat
 from io import StringIO
 import six
-from six import string_types
+from six import string_types, text_type
 
 from fabric.network import ssh
 
@@ -51,7 +51,7 @@ class FakeFilesystem(dict):
             self[key] = value
 
     def __setitem__(self, key, value):
-        if isinstance(value, string_types) or value is None:
+        if isinstance(value, text_type) or value is None:
             value = FakeFile(value, key)
         super(FakeFilesystem, self).__setitem__(key, value)
 
