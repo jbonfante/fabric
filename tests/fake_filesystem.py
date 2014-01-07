@@ -1,7 +1,8 @@
 import os
 import stat
-from io import StringIO
 import six
+if six.PY3: from io import StringIO
+else: from StringIO import StringIO
 from six import string_types, text_type
 
 from fabric.network import ssh
