@@ -2,12 +2,19 @@ from __future__ import with_statement
 
 from fabric.api import run, parallel, env, hide, execute, settings
 
-from utils import FabricTest, eq_, aborts, mock_streams
-from server import server, RESPONSES, USER, HOST, PORT
+import six
+if six.PY3:
+    from .utils import FabricTest, eq_, aborts, mock_streams
+    from .server import server, RESPONSES, USER, HOST, PORT
+else:
+    from utils import FabricTest, eq_, aborts, mock_streams
+    from server import server, RESPONSES, USER, HOST, PORT
 
 # TODO: move this into test_tasks? meh.
 
-class OhNoesException(Exception): pass
+
+class OhNoesException(Exception):
+    pass
 
 
 class TestParallel(FabricTest):
@@ -51,7 +58,7 @@ class TestParallel(FabricTest):
                 run("ls /")
                 if env.host_string == host2:
                     raise OhNoesException
-            
+
             execute(mytask, hosts=[host1, host2])
 
     @server(port=2200)

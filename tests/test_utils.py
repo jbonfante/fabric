@@ -12,7 +12,12 @@ from fabric.utils import warn, indent, abort, puts, fastprint, error, RingBuffer
 from fabric import utils  # For patching
 from fabric.context_managers import settings, hide
 from fabric.colors import magenta, red
-from utils import mock_streams, aborts, FabricTest, assert_contains
+
+from six import PY3, b
+if PY3:
+    from .utils import mock_streams, aborts, FabricTest, assert_contains
+else:
+    from utils import mock_streams, aborts, FabricTest, assert_contains
 
 
 @mock_streams('stderr')

@@ -2,13 +2,22 @@ from __future__ import with_statement
 
 import copy
 from functools import partial
-from operator import isMappingType
+import six
+from six import iteritems
+if six.PY3:
+    import collections
+
+    def isMappingType(obj):
+        return isinstance(obj, collections.Mapping)
+else:
+    from operator import isMappingType
+
 import os
 import sys
 from contextlib import contextmanager
 
 from fudge import Fake, patched_context, with_fakes
-from nose.tools import ok_, eq_
+from nose.tools import ok_
 
 from fabric.decorators import hosts, roles, task
 from fabric.context_managers import settings
@@ -20,7 +29,10 @@ from fabric.state import _AttributeDict
 from fabric.tasks import Task, WrappedCallableTask
 from fabric.task_utils import _crawl, crawl, merge
 
-from utils import mock_streams, eq_, FabricTest, fabfile, path_prefix, aborts
+if six.PY3:
+    from .utils import mock_streams, eq_, FabricTest, fabfile, path_prefix, aborts
+else:
+    from utils import mock_streams, eq_, FabricTest, fabfile, path_prefix, aborts
 
 
 # Stupid load_fabfile wrapper to hide newly added return value.
@@ -35,7 +47,7 @@ def load_fabfile(*args, **kwargs):
 
 def test_argument_parsing():
     for args, output in [
-        # Basic 
+        # Basic
         ('abc', ('abc', [], {}, [], [], [])),
         # Arg
         ('ab:c', ('ab', ['c'], {}, [], [], [])),
@@ -543,7 +555,7 @@ def name_to_task(name):
 
 def strings_to_tasks(d):
     ret = {}
-    for key, value in d.iteritems():
+    for key, value in iteritems(d):
         if isMappingType(value):
             val = strings_to_tasks(value)
         else:

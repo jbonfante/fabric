@@ -13,6 +13,8 @@ from fabric.network import ssh, normalize
 from fabric.utils import RingBuffer
 from fabric.exceptions import CommandTimeout
 
+import six
+from six import iteritems
 
 if win32:
     import msvcrt
@@ -91,7 +93,7 @@ class OutputLooper(object):
                     raise CommandTimeout
                 continue
             # Empty byte == EOS
-            if bytelist == '':
+            if bytelist == six.b(''):
                 # If linewise, ensure we flush any leftovers in the buffer.
                 if self.linewise and line:
                     self._flush(self.prefix)
@@ -109,6 +111,8 @@ class OutputLooper(object):
                 # Print to user
                 if self.printing:
                     printable_bytes = bytelist
+                    if six.PY3:
+                        printable_bytes = printable_bytes.decode('utf-8')
                     # Small state machine to eat \n after \r
                     if printable_bytes[-1] == "\r":
                         seen_cr = True
@@ -146,7 +150,10 @@ class OutputLooper(object):
                         self._flush(printable_bytes)
 
                 # Now we have handled printing, handle interactivity
-                read_lines = re.split(r"(\r|\n|\r\n)", bytelist)
+                tmp = bytelist
+                if six.PY3:
+                    tmp = tmp.decode('utf-8')
+                read_lines = re.split(r"(\r|\n|\r\n)", tmp)
                 for fragment in read_lines:
                     # Store in capture buffer
                     self.capture += fragment
@@ -217,7 +224,7 @@ class OutputLooper(object):
         Iterate through the request prompts dict and return the response and
         original request if we find a match
         """
-        for tup in env.prompts.iteritems():
+        for tup in iteritems(env.prompts):
             if _endswith(self.capture, tup[0]):
                 return tup
         return None, None

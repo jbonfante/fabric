@@ -8,7 +8,7 @@ import hashlib
 import tempfile
 import re
 import os
-from StringIO import StringIO
+from six import string_types, BytesIO as StringIO
 
 from fabric.api import *
 from fabric.utils import apply_lcwd
@@ -139,6 +139,8 @@ def upload_template(filename, destination, context=None, use_jinja=False,
     if backup and exists(destination):
         func("cp %s{,.bak}" % _expand_path(destination))
 
+    if isinstance(text, string_types):
+        text = text.encode('utf-8')
     # Upload the file.
     return put(
         local_path=StringIO(text),
@@ -305,7 +307,7 @@ def comment(filename, regex, use_sudo=False, char='#', backup='.bak',
 
 
 def contains(filename, text, exact=False, use_sudo=False, escape=True,
-    shell=False):
+             shell=False):
     """
     Return True if ``filename`` contains ``text`` (which may be a regex.)
 
@@ -388,16 +390,17 @@ def append(filename, text, use_sudo=False, partial=False, escape=True,
     """
     func = use_sudo and sudo or run
     # Normalize non-list input to be a list
-    if isinstance(text, basestring):
+    if isinstance(text, string_types):
         text = [text]
     for line in text:
-        regex = '^' + _escape_for_regex(line)  + ('' if partial else '$')
+        regex = '^' + _escape_for_regex(line) + ('' if partial else '$')
         if (exists(filename, use_sudo=use_sudo) and line
             and contains(filename, regex, use_sudo=use_sudo, escape=False,
                          shell=shell)):
             continue
         line = line.replace("'", r"'\\''") if escape else line
         func("echo '%s' >> %s" % (line, _expand_path(filename)))
+
 
 def _escape_for_regex(text):
     """Escape ``text`` to allow literal matching using egrep"""
@@ -409,6 +412,7 @@ def _escape_for_regex(text):
     # Whereas single quotes should not be escaped
     regex = regex.replace(r"\'", "'")
     return regex
+
 
 def _expand_path(path):
     return '"$(echo %s)"' % path

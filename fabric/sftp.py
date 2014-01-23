@@ -11,6 +11,7 @@ from fabric.state import output, connections, env
 from fabric.utils import warn
 from fabric.context_managers import settings
 
+from six import string_types
 
 def _format_local(local_path, local_is_path):
     """Format a path for log output"""
@@ -79,7 +80,7 @@ class SFTP(object):
             # Note that listdir and error are globals in this module due to
             # earlier import-*.
             names = self.ftp.listdir(top)
-        except Exception, err:
+        except Exception as err:
             if onerror is not None:
                 onerror(err)
             return
@@ -215,8 +216,14 @@ class SFTP(object):
         if use_sudo:
             target_path = remote_path
             hasher = hashlib.sha1()
-            hasher.update(env.host_string)
-            hasher.update(target_path)
+            if isinstance(env.host_string, string_types):
+                hasher.update(env.host_string.encode('utf-8'))
+            else:
+                hasher.update(env.host_string)
+            if isinstance(target_path, string_types):
+                hasher.update(target_path.encode('utf-8'))
+            else:
+                hasher.update(target_path)
             remote_path = posixpath.join(temp_dir, hasher.hexdigest())
         # Read, ensuring we handle file-like objects correct re: seek pointer
         putter = self.ftp.put
@@ -231,13 +238,13 @@ class SFTP(object):
         if (local_is_path and mirror_local_mode) or (mode is not None):
             lmode = os.stat(local_path).st_mode if mirror_local_mode else mode
             # Cast to octal integer in case of string
-            if isinstance(lmode, basestring):
+            if isinstance(lmode, string_types):
                 lmode = int(lmode, 8)
-            lmode = lmode & 07777
+            lmode = lmode & 0o7777
             rmode = rattrs.st_mode
             # Only bitshift if we actually got an rmode
             if rmode is not None:
-                rmode = (rmode & 07777)
+                rmode = (rmode & 0o7777)
             if lmode != rmode:
                 if use_sudo:
                     with hide('everything'):

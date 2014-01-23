@@ -2,7 +2,7 @@
 Classes and subroutines dealing with network connections and related topics.
 """
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 from functools import wraps
 import getpass
@@ -11,8 +11,7 @@ import re
 import time
 import socket
 import sys
-from StringIO import StringIO
-
+from six import string_types, StringIO, PY3
 
 from fabric.auth import get_password, set_password
 from fabric.utils import abort, handle_prompt_abort, warn
@@ -22,7 +21,7 @@ try:
     import warnings
     warnings.simplefilter('ignore', DeprecationWarning)
     import paramiko as ssh
-except ImportError, e:
+except ImportError as e:
     import traceback
     traceback.print_exc()
     msg = """
@@ -88,7 +87,7 @@ def get_gateway(host, port, cache, replace=False):
         # ensure initial gateway connection
         if replace or gateway not in cache:
             if output.debug:
-                print "Creating new gateway connection to %r" % gateway
+                print("Creating new gateway connection to %r" % gateway)
             cache[gateway] = connect(*normalize(gateway) + (cache, False))
         # now we should have an open gw connection and can ask it for a
         # direct-tcpip channel to the real target. (bypass cache's own
@@ -206,16 +205,16 @@ def key_filenames():
     from fabric.state import env
     keys = env.key_filename
     # For ease of use, coerce stringish key filename into list
-    if isinstance(env.key_filename, basestring) or env.key_filename is None:
+    if isinstance(env.key_filename, string_types) or env.key_filename is None:
         keys = [keys]
     # Strip out any empty strings (such as the default value...meh)
-    keys = filter(bool, keys)
+    keys = list(filter(bool, keys))
     # Honor SSH config
     conf = ssh_config()
     if 'identityfile' in conf:
         # Assume a list here as we require Paramiko 1.10+
         keys.extend(conf['identityfile'])
-    return map(os.path.expanduser, keys)
+    return list(map(os.path.expanduser, keys))
 
 
 def key_from_env(passphrase=None):
@@ -235,7 +234,7 @@ def key_from_env(passphrase=None):
                 sys.stderr.write("Trying to load it as %s\n" % pkey_class)
             try:
                 return pkey_class.from_private_key(StringIO(env.key), passphrase)
-            except Exception, e:
+            except Exception as e:
                 # File is valid key, but is encrypted: raise it, this will
                 # cause cxn loop to prompt for passphrase & retry
                 if 'Private key file is encrypted' in e:
@@ -388,7 +387,10 @@ def connect(user, host, port, cache, seek_gateway=True):
         Whether to try setting up a gateway socket for this connection. Used so
         the actual gateway connection can prevent recursion.
     """
-    from state import env, output
+    if PY3:
+        from .state import env, output
+    else:
+        from state import env, output
 
     #
     # Initialization
@@ -453,14 +455,14 @@ def connect(user, host, port, cache, seek_gateway=True):
         # BadHostKeyException corresponds to key mismatch, i.e. what on the
         # command line results in the big banner error about man-in-the-middle
         # attacks.
-        except ssh.BadHostKeyException, e:
+        except ssh.BadHostKeyException as e:
             raise NetworkError("Host key for %s did not match pre-existing key! Server's key was changed recently, or possible man-in-the-middle attack." % host, e)
         # Prompt for new password to try on auth failure
         except (
             ssh.AuthenticationException,
             ssh.PasswordRequiredException,
             ssh.SSHException
-        ), e:
+        ) as e:
             msg = str(e)
             # If we get SSHExceptionError and the exception message indicates
             # SSH protocol banner read failures, assume it's caused by the
@@ -529,11 +531,11 @@ def connect(user, host, port, cache, seek_gateway=True):
             print('')
             sys.exit(0)
         # Handle DNS error / name lookup failure
-        except socket.gaierror, e:
+        except socket.gaierror as e:
             raise NetworkError('Name lookup failed for %s' % host, e)
         # Handle timeouts and retries, including generic errors
         # NOTE: In 2.6, socket.error subclasses IOError
-        except socket.error, e:
+        except socket.error as e:
             not_timeout = type(e) is not socket.timeout
             giving_up = _tried_enough(tries)
             # Baseline error msg for when debug is off
@@ -556,7 +558,7 @@ def connect(user, host, port, cache, seek_gateway=True):
             # Override eror msg if we were retrying other errors
             if not_timeout:
                 msg = "Low level socket error connecting to host %s on port %s: %s" % (
-                    host, port, e[1]
+                    host, port, e.args[1]
                 )
             # Here, all attempts failed. Tweak error msg to show # tries.
             # TODO: find good humanization module, jeez
@@ -632,9 +634,13 @@ def needs_host(func):
     @wraps(func)
     def host_prompting_wrapper(*args, **kwargs):
         while not env.get('host_string', False):
+            try:
+                input = raw_input
+            except NameError:
+                pass
             handle_prompt_abort("the target host connection string")
-            host_string = raw_input("No hosts found. Please specify (single)"
-                                    " host string for connection: ")
+            host_string = input("No hosts found. Please specify (single)"
+                                " host string for connection: ")
             env.update(to_dict(host_string))
         return func(*args, **kwargs)
     host_prompting_wrapper.undecorated = func
@@ -650,7 +656,7 @@ def disconnect_all():
     """
     from fabric.state import connections, output
     # Explicitly disconnect from all servers
-    for key in connections.keys():
+    for key in list(connections):
         if output.status:
             # Here we can't use the py3k print(x, end=" ")
             # because 2.5 backwards compatibility

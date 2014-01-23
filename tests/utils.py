@@ -4,7 +4,8 @@ from contextlib import contextmanager
 from copy import deepcopy
 from fudge.patcher import with_patched_object
 from functools import partial
-from types import StringTypes
+import six
+from six import string_types
 import copy
 import getpass
 import os
@@ -23,8 +24,12 @@ from fabric.sftp import SFTP
 import fabric.network
 from fabric.network import normalize, to_dict
 
-from server import PORT, PASSWORDS, USER, HOST
-from mock_streams import mock_streams
+if six.PY3:
+    from .server import PORT, PASSWORDS, USER, HOST
+    from .mock_streams import mock_streams
+else:
+    from server import PORT, PASSWORDS, USER, HOST
+    from mock_streams import mock_streams
 
 
 class FabricTest(object):
@@ -101,7 +106,7 @@ def password_response(password, times_called=None, silent=True):
     """
     fake = Fake('getpass', callable=True)
     # Assume stringtype or iterable, turn into mutable iterable
-    if isinstance(password, StringTypes):
+    if isinstance(password, string_types):
         passwords = [password]
     else:
         passwords = list(password)
@@ -195,6 +200,9 @@ def aborts(func):
 
 
 def _patched_input(func, fake):
-    return func(sys.modules['__builtin__'], 'raw_input', fake)
+    if six.PY3:
+        return func(sys.modules['builtins'], 'input', fake)
+    else:
+        return func(sys.modules['__builtin__'], 'raw_input', fake)
 patched_input = partial(_patched_input, patched_context)
 with_patched_input = partial(_patched_input, with_patched_object)

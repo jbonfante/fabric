@@ -22,7 +22,7 @@ def abort(msg):
     if not env.colorize_errors:
         red  = lambda x: x
     else:
-        from colors import red
+        from .colors import red
 
     if output.aborts:
         sys.stderr.write(red("\nFatal error: %s\n" % str(msg)))
@@ -48,7 +48,7 @@ def warn(msg):
     if not env.colorize_errors:
         magenta = lambda x: x
     else:
-        from colors import magenta
+        from .colors import magenta
 
     if output.warnings:
         sys.stderr.write(magenta("\nWarning: %s\n\n" % msg))
@@ -329,7 +329,7 @@ def error(message, func=None, exception=None, stdout=None, stderr=None):
 
 def _format_error_output(header, body):
     term_width = _pty_size()[1]
-    header_side_length = (term_width - (len(header) + 2)) / 2
+    header_side_length = int((term_width - (len(header) + 2)) / 2)
     mark = "="
     side = mark * header_side_length
     return "\n\n%s %s %s\n\n%s\n\n%s" % (

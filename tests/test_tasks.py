@@ -14,18 +14,26 @@ from fabric.api import run, env, settings, hosts, roles, hide, parallel, task
 from fabric.network import from_dict
 from fabric.exceptions import NetworkError
 
-from utils import eq_, FabricTest, aborts, mock_streams
-from server import server
+import six
+from six import iteritems
+if six.PY3:
+    from .utils import eq_, FabricTest, aborts, mock_streams
+    from .server import server
+else:
+    from utils import eq_, FabricTest, aborts, mock_streams
+    from server import server
 
 
 def test_base_task_provides_undefined_name():
     task = Task()
     eq_("undefined", task.name)
 
+
 @raises(NotImplementedError)
 def test_base_task_raises_exception_on_call_to_run():
     task = Task()
     task.run()
+
 
 class TestWrappedCallableTask(unittest.TestCase):
     def test_passes_unused_args_to_parent(self):
@@ -167,7 +175,7 @@ def dict_contains(superset, subset):
     """
     Assert that all key/val pairs in dict 'subset' also exist in 'superset'
     """
-    for key, value in subset.iteritems():
+    for key, value in iteritems(subset):
         ok_(key in superset)
         eq_(superset[key], value)
 
@@ -344,7 +352,7 @@ class TestExecute(FabricTest):
         Networked but serial tasks should return per-host-string dict
         """
         ports = [2200, 2201]
-        hosts = map(lambda x: '127.0.0.1:%s' % x, ports)
+        hosts = list(map(lambda x: '127.0.0.1:%s' % x, ports))
         def task():
             run("ls /simple")
             return "foo"

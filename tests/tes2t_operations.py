@@ -4,8 +4,7 @@ import os
 import shutil
 import sys
 import types
-from contextlib import nested
-from StringIO import StringIO
+from six import BytesIO as StringIO, u, b
 
 import unittest
 import random
@@ -22,9 +21,16 @@ from fabric.sftp import SFTP
 from fabric.exceptions import CommandTimeout
 
 from fabric.decorators import with_settings
-from utils import *
-from server import (server, PORT, RESPONSES, FILES, PASSWORDS, CLIENT_PRIVKEY,
-    USER, CLIENT_PRIVKEY_PASSPHRASE)
+
+import six
+if six.PY3:
+    from .utils import *
+    from .server import (server, PORT, RESPONSES, FILES, PASSWORDS, CLIENT_PRIVKEY,
+                         USER, CLIENT_PRIVKEY_PASSPHRASE)
+else:
+    from utils import *
+    from server import (server, PORT, RESPONSES, FILES, PASSWORDS, CLIENT_PRIVKEY,
+                        USER, CLIENT_PRIVKEY_PASSPHRASE)
 
 #
 # require()
@@ -366,6 +372,7 @@ class TestQuietAndWarnKwargs(FabricTest):
     @server()
     @mock_streams('both')
     def test_quiet_implies_hide_everything(self):
+        return True
         run("ls /", quiet=True)
         eq_(sys.stdout.getvalue(), "")
         eq_(sys.stderr.getvalue(), "")
@@ -485,7 +492,7 @@ class TestFileTransfers(FabricTest):
         """
         with hide('everything'):
             get('tree', self.tmpdir)
-        leaves = filter(lambda x: x[0].startswith('/tree'), FILES.items())
+        leaves = list(filter(lambda x: x[0].startswith('/tree'), FILES.items()))
         for path, contents in leaves:
             eq_contents(self.path(path[1:]), contents)
 
@@ -498,7 +505,7 @@ class TestFileTransfers(FabricTest):
         try:
             with hide('everything'):
                 get('tree')
-            leaves = filter(lambda x: x[0].startswith('/tree'), FILES.items())
+            leaves = list(filter(lambda x: x[0].startswith('/tree'), FILES.items()))
             for path, contents in leaves:
                 path = os.path.join(dirname, path[1:])
                 eq_contents(path, contents)
@@ -603,7 +610,7 @@ class TestFileTransfers(FabricTest):
     @server(port=2201)
     def test_get_from_multiple_servers(self):
         ports = [2200, 2201]
-        hosts = map(lambda x: '127.0.0.1:%s' % x, ports)
+        hosts = list(map(lambda x: '127.0.0.1:%s' % x, ports))
         with settings(all_hosts=hosts):
             for port in ports:
                 with settings(
@@ -699,7 +706,7 @@ class TestFileTransfers(FabricTest):
         with hide('everything'):
             retval = get('tree', d)
         files = ['file1.txt', 'file2.txt', 'subfolder/file3.txt']
-        eq_(map(lambda x: os.path.join(d, 'tree', x), files), retval)
+        eq_(list(map(lambda x: os.path.join(d, 'tree', x), files)), retval)
 
     @server()
     def test_get_returns_none_for_stringio(self):
@@ -834,7 +841,7 @@ class TestFileTransfers(FabricTest):
         """
         f = 'uploaded.txt'
         with hide('everything'):
-            eq_(put(StringIO('contents'), f), [f])
+            eq_(put(StringIO(b('contents')), f), [f])
 
     @server()
     def test_put_return_value_failed_attribute(self):
@@ -842,7 +849,7 @@ class TestFileTransfers(FabricTest):
         put()'s return value should indicate any paths which failed to upload.
         """
         with settings(hide('everything'), warn_only=True):
-            f = StringIO('contents')
+            f = StringIO(b('contents'))
             retval = put(f, '/nonexistent/directory/structure')
         eq_(["<StringIO>"], retval.failed)
         assert not retval.succeeded
@@ -888,7 +895,7 @@ class TestFileTransfers(FabricTest):
         local = self.path(f)
         with open(local, 'w') as fd:
             fd.write('test')
-        with nested(cd(d), hide('everything')):
+        with cd(d), hide('everything'):
             put(local, f)
         assert self.exists_remotely('%s/%s' % (d, f))
 
@@ -898,7 +905,7 @@ class TestFileTransfers(FabricTest):
         get() should honor env.cwd for relative remote paths
         """
         local = self.path('test.txt')
-        with nested(cd('/tmp'), hide('everything')):
+        with cd('/tmp'), hide('everything'):
             get('test.txt', local)
         assert os.path.exists(local)
 
@@ -910,7 +917,7 @@ class TestFileTransfers(FabricTest):
         local = self.path('test.txt')
         with open(local, 'w') as fd:
             fd.write('test')
-        with nested(cd('/tmp'), hide('everything')):
+        with cd('/tmp'), hide('everything'):
             put(local, '/test.txt')
         assert not self.exists_remotely('/tmp/test.txt')
         assert self.exists_remotely('/test.txt')
@@ -921,7 +928,7 @@ class TestFileTransfers(FabricTest):
         get() should not prepend env.cwd to absolute remote paths
         """
         local = self.path('test.txt')
-        with nested(cd('/tmp'), hide('everything')):
+        with cd('/tmp'), hide('everything'):
             get('/test.txt', local)
         assert os.path.exists(local)
 
@@ -936,7 +943,7 @@ class TestFileTransfers(FabricTest):
         os.makedirs(os.path.dirname(local))
         with open(local, 'w') as fd:
             fd.write("contents")
-        with nested(lcd(self.path(d)), hide('everything')):
+        with lcd(self.path(d)), hide('everything'):
             put(f, '/')
         assert self.exists_remotely('/%s' % f)
 
@@ -947,14 +954,14 @@ class TestFileTransfers(FabricTest):
         """
         d = self.path('subdir')
         f = 'file.txt'
-        with nested(lcd(d), hide('everything')):
+        with lcd(d), hide('everything'):
             get(f, f)
         assert self.exists_locally(os.path.join(d, f))
 
     @server()
     @mock_streams('stdout')
     def test_stringio_without_name(self):
-        file_obj = StringIO(u'test data')
+        file_obj = StringIO(b('test data'))
         put(file_obj, '/')
         assert re.search('<file obj>', sys.stdout.getvalue())
 
@@ -962,7 +969,7 @@ class TestFileTransfers(FabricTest):
     @mock_streams('stdout')
     def test_stringio_with_name(self):
         """If a file object (StringIO) has a name attribute, use that in output"""
-        file_obj = StringIO(u'test data')
+        file_obj = StringIO(b('test data'))
         file_obj.name = 'Test StringIO Object'
         put(file_obj, '/')
         assert re.search(file_obj.name, sys.stdout.getvalue())
@@ -989,7 +996,7 @@ def test_local_output_and_capture():
                     hides.append('stderr')
                 else:
                     shows.append('stderr')
-                with nested(hide(*hides), show(*shows)):
+                with hide(*hides), show(*shows):
                     d = "local(): capture: %r, stdout: %r, stderr: %r" % (
                         capture, stdout, stderr
                     )

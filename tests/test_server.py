@@ -12,7 +12,11 @@ from nose.tools import eq_, ok_
 
 from fabric.network import ssh
 
-from server import FakeSFTPServer
+import six
+if six.PY3:
+    from .server import FakeSFTPServer
+else:
+    from server import FakeSFTPServer
 
 
 class AttrHolder(object):
@@ -91,7 +95,7 @@ def test_list_folder():
         # not "no files found"
         ok_(results != ssh.SFTP_NO_SUCH_FILE)
         # Grab filename from SFTPAttribute objects in result
-        output = map(lambda x: x.filename, results)
+        output = list(map(lambda x: x.filename, results))
         # Yield test generator
         eq_.description = "list_folder: %s" % desc
         yield eq_, set(expected), set(output)

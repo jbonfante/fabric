@@ -16,7 +16,7 @@ from glob import glob
 from contextlib import closing, contextmanager
 
 from fabric.context_managers import (settings, char_buffered, hide,
-    quiet as quiet_manager, warn_only as warn_only_manager)
+                                     quiet as quiet_manager, warn_only as warn_only_manager)
 from fabric.io import output_loop, input_loop
 from fabric.network import needs_host, ssh, ssh_config
 from fabric.sftp import SFTP
@@ -31,6 +31,8 @@ from fabric.utils import (
     warn,
     apply_lcwd
 )
+
+from six import iteritems, string_types
 
 
 def _shell_escape(string):
@@ -55,7 +57,10 @@ class _AttributeString(str):
     """
     @property
     def stdout(self):
-        return str(self)
+        if isinstance(self, string_types):
+            return self
+        else:
+            return self.decode('utf-8')
 
 
 class _AttributeList(list):
@@ -96,8 +101,8 @@ def require(*keys, **kwargs):
         Allow iterable ``provided_by`` values instead of just single values.
     """
     # If all keys exist and are non-empty, we're good, so keep going.
-    missing_keys = filter(lambda x: x not in env or (x in env and
-        isinstance(env[x], (dict, list, tuple, set)) and not env[x]), keys)
+    missing_keys = list(filter(lambda x: x not in env or (x in env and
+        isinstance(env[x], (dict, list, tuple, set)) and not env[x]), keys))
     if not missing_keys:
         return
     # Pluralization
@@ -212,7 +217,11 @@ def prompt(text, key=None, default='', validate=None):
     value = None
     while value is None:
         # Get input
-        value = raw_input(prompt_str) or default
+        try:
+            input = raw_input
+        except NameError:
+            pass
+        value = input(prompt_str) or default
         # Handle validation
         if validate:
             # Callable
@@ -221,7 +230,7 @@ def prompt(text, key=None, default='', validate=None):
                 # fails.
                 try:
                     value = validate(value)
-                except Exception, e:
+                except Exception as e:
                     # Reset value so we stay in the loop
                     value = None
                     print("Validation failed for the following reason:")
@@ -398,7 +407,7 @@ def put(local_path=None, remote_path=None, use_sudo=False,
                     p = ftp.put(lpath, remote_path, use_sudo, mirror_local_mode,
                         mode, local_is_path, temp_dir)
                     remote_paths.append(p)
-            except Exception, e:
+            except Exception as e:
                 msg = "put() encountered an exception while uploading '%s'"
                 failure = lpath if local_is_path else "<StringIO>"
                 failed_local_paths.append(failure)
@@ -573,7 +582,7 @@ def get(remote_path, local_path=None):
                     if local_is_path:
                         local_files.append(result)
 
-        except Exception, e:
+        except Exception as e:
             failed_remote_files.append(remote_path)
             msg = "get() encountered an exception while downloading '%s'"
             error(message=msg % remote_path, exception=e)
@@ -695,7 +704,7 @@ def _prefix_env_vars(command, local=False):
 
         exports = ' '.join(
             '%s%s="%s"' % (set_cmd, k, v if k == 'PATH' else _shell_escape(v))
-            for k, v in env_vars.iteritems()
+            for k, v in iteritems(env_vars)
         )
         shell_env_str = '%s%s && ' % (exp_cmd, exports)
     else:
@@ -1173,8 +1182,8 @@ def local(command, capture=False, shell=None):
         if dev_null is not None:
             dev_null.close()
     # Handle error condition (deal with stdout being None, too)
-    out = _AttributeString(stdout.strip() if stdout else "")
-    err = _AttributeString(stderr.strip() if stderr else "")
+    out = _AttributeString(stdout.strip().decode('utf-8') if stdout else "")
+    err = _AttributeString(stderr.strip().decode('utf-8') if stderr else "")
     out.failed = False
     out.return_code = p.returncode
     out.stderr = err

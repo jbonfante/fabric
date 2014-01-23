@@ -9,11 +9,15 @@ from fudge import Fake, with_fakes, patched_context
 
 from fabric import decorators, tasks
 from fabric.state import env
-import fabric # for patching fabric.state.xxx
+import fabric  # for patching fabric.state.xxx
 from fabric.tasks import _parallel_tasks, requires_parallel, execute
 from fabric.context_managers import lcd, settings, hide
 
-from utils import mock_streams
+import six
+if six.PY3:
+    from .utils import mock_streams
+else:
+    from utils import mock_streams
 
 
 #
@@ -188,10 +192,12 @@ fake_tasks = {
     'parallel2': parallel2,
 }
 
+
 def parallel_task_helper(actual_tasks, expected):
-    commands_to_run = map(lambda x: [x], actual_tasks)
+    commands_to_run = list(map(lambda x: [x], actual_tasks))
     with patched_context(fabric.state, 'commands', fake_tasks):
         eq_(_parallel_tasks(commands_to_run), expected)
+
 
 def test_parallel_tasks():
     for desc, task_names, expected in (
@@ -207,6 +213,7 @@ def test_parallel_tasks():
         parallel_task_helper.description = desc
         yield parallel_task_helper, task_names, expected
         del parallel_task_helper.description
+
 
 def test_parallel_wins_vs_serial():
     """

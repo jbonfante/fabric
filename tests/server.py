@@ -10,16 +10,20 @@ import sys
 import threading
 import time
 import types
-from StringIO import StringIO
 from functools import wraps
-from Python26SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
+from six import string_types, PY3, reraise, b
+if PY3:
+    from .Python26SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
+    from .fake_filesystem import FakeFilesystem, FakeFile
+else:
+    from Python26SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
+    from fake_filesystem import FakeFilesystem, FakeFile
 
 from fabric.operations import _sudo_prefix
 from fabric.api import env, hide
 from fabric.thread_handling import ThreadHandler
 from fabric.network import disconnect_all, ssh
 
-from fake_filesystem import FakeFilesystem, FakeFile
 
 #
 # Debugging
@@ -90,7 +94,7 @@ def _equalize(lists, fillval=None):
     """
     Pad all given list items in ``lists`` to be the same length.
     """
-    lists = map(list, lists)
+    lists = list(map(list, lists))
     upper = max(len(x) for x in lists)
     for lst in lists:
         diff = upper - len(lst)
@@ -272,7 +276,7 @@ class FakeSFTPServer(ssh.SFTPServerInterface):
 
     def list_folder(self, path):
         path = self.files.normalize(path)
-        expanded_files = map(expand, self.files)
+        expanded_files = list(map(expand, self.files))
         expanded_path = expand(path)
         candidates = [x for x in expanded_files if contains(x, expanded_path)]
         children = []
@@ -408,7 +412,7 @@ def serve_responses(responses, files, passwords, home, pubkeys, port):
             stderr = ""
             status = 0
             sleep = 0
-            if isinstance(result, types.StringTypes):
+            if isinstance(result, string_types):
                 stdout = result
             else:
                 size = len(result)
@@ -489,6 +493,6 @@ def server(
                 # Handle subthread exceptions
                 e = worker.exception
                 if e:
-                    raise e[0], e[1], e[2]
+                    reraise(e[0], e[1], e[2])
         return inner
     return run_server
