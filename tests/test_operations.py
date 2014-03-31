@@ -804,7 +804,7 @@ class TestFileTransfers(FabricTest):
         """
         local = self.path('whatever')
         fake_file = StringIO()
-        fake_file.write("testing file-like objects in put()")
+        fake_file.write(b("testing file-like objects in put()"))
         pointer = fake_file.tell()
         target = '/new_file.txt'
         with hide('everything'):
