@@ -33,6 +33,7 @@ from fabric.utils import (
 )
 
 from six import iteritems, string_types
+from six.moves import input
 
 
 def _shell_escape(string):
@@ -217,10 +218,6 @@ def prompt(text, key=None, default='', validate=None):
     value = None
     while value is None:
         # Get input
-        try:
-            input = raw_input
-        except NameError:
-            pass
         value = input(prompt_str) or default
         # Handle validation
         if validate:

@@ -12,6 +12,7 @@ import time
 import socket
 import sys
 from six import string_types, StringIO, PY3
+from six.moves import input
 
 from fabric.auth import get_password, set_password
 from fabric.utils import abort, handle_prompt_abort, warn
@@ -634,10 +635,6 @@ def needs_host(func):
     @wraps(func)
     def host_prompting_wrapper(*args, **kwargs):
         while not env.get('host_string', False):
-            try:
-                input = raw_input
-            except NameError:
-                pass
             handle_prompt_abort("the target host connection string")
             host_string = input("No hosts found. Please specify (single)"
                                 " host string for connection: ")
