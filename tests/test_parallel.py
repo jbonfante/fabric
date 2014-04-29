@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 from fabric.api import run, parallel, env, hide, execute, settings
 
@@ -7,8 +7,8 @@ if six.PY3:
     from .utils import FabricTest, eq_, aborts, mock_streams
     from .server import server, RESPONSES, USER, HOST, PORT
 else:
-    from utils import FabricTest, eq_, aborts, mock_streams
-    from server import server, RESPONSES, USER, HOST, PORT
+    from .utils import FabricTest, eq_, aborts, mock_streams
+    from .server import server, RESPONSES, USER, HOST, PORT
 
 # TODO: move this into test_tasks? meh.
 

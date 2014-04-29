@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import sys
 import time
@@ -104,7 +104,12 @@ class OutputLooper(object):
                 # Just print directly -- no prefixes, no capturing, nada
                 # And since we know we're using a pty in this mode, just go
                 # straight to stdout.
-                self._flush(bytelist)
+                printable_bytes = bytelist
+                if six.PY3:
+                    printable_bytes = printable_bytes.decode('utf-8')
+                    self._flush(printable_bytes)
+                else:
+                    self._flush(bytelist)
             # Otherwise, we're in run/sudo and need to handle capturing and
             # prompts.
             else:

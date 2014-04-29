@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import random
 import sys
@@ -17,7 +17,7 @@ import six
 if six.PY3:
     from .utils import mock_streams
 else:
-    from utils import mock_streams
+    from .utils import mock_streams
 
 
 #
@@ -194,7 +194,7 @@ fake_tasks = {
 
 
 def parallel_task_helper(actual_tasks, expected):
-    commands_to_run = list(map(lambda x: [x], actual_tasks))
+    commands_to_run = list([[x] for x in actual_tasks])
     with patched_context(fabric.state, 'commands', fake_tasks):
         eq_(_parallel_tasks(commands_to_run), expected)
 

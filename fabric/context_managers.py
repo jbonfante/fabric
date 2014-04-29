@@ -43,6 +43,7 @@ from fabric.thread_handling import ThreadHandler
 from fabric.state import output, win32, connections, env
 from . import state
 from six import iteritems
+import collections
 
 if not win32:
     import termios
@@ -129,7 +130,7 @@ def _setenv(variables):
     This context manager is used internally by `settings` and is not intended
     to be used directly.
     """
-    if callable(variables):
+    if isinstance(variables, collections.Callable):
         variables = variables()
     clean_revert = variables.pop('clean_revert', False)
     previous = {}

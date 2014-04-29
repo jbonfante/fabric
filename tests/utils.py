@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 from contextlib import contextmanager
 from copy import deepcopy
@@ -28,8 +28,8 @@ if six.PY3:
     from .server import PORT, PASSWORDS, USER, HOST
     from .mock_streams import mock_streams
 else:
-    from server import PORT, PASSWORDS, USER, HOST
-    from mock_streams import mock_streams
+    from .server import PORT, PASSWORDS, USER, HOST
+    from .mock_streams import mock_streams
 
 
 class FabricTest(object):
@@ -43,7 +43,7 @@ class FabricTest(object):
         self.previous_env = copy.deepcopy(env)
         # Deepcopy doesn't work well on AliasDicts; but they're only one layer
         # deep anyways, so...
-        self.previous_output = output.items()
+        self.previous_output = list(output.items())
         # Allow hooks from subclasses here for setting env vars (so they get
         # purged correctly in teardown())
         self.env_setup()

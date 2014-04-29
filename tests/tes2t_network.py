@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 from datetime import datetime
 import copy
@@ -26,8 +26,8 @@ if six.PY3:
     from .server import (server, PORT, RESPONSES, PASSWORDS, CLIENT_PRIVKEY, USER,
                          CLIENT_PRIVKEY_PASSPHRASE)
 else:
-    from utils import *
-    from server import (server, PORT, RESPONSES, PASSWORDS, CLIENT_PRIVKEY, USER,
+    from .utils import *
+    from .server import (server, PORT, RESPONSES, PASSWORDS, CLIENT_PRIVKEY, USER,
                         CLIENT_PRIVKEY_PASSPHRASE)
 
 

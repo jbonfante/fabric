@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement
+
 
 import os
 
@@ -64,7 +64,7 @@ class TestContrib(FabricTest):
         template_dir = os.path.dirname(template)
         local = self.path('result.txt')
         remote = '/configfile.txt'
-        first_name = u('S\u00E9bastien')
+        first_name = u('S\\u00E9bastien')
         with hide('everything'):
             upload_template(template_name, remote, {'first_name': first_name},
                             use_jinja=True, template_dir=template_dir)

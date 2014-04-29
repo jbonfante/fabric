@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import copy
 import itertools
@@ -16,8 +16,8 @@ if PY3:
     from .Python26SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
     from .fake_filesystem import FakeFilesystem, FakeFile
 else:
-    from Python26SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
-    from fake_filesystem import FakeFilesystem, FakeFile
+    from .Python26SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
+    from .fake_filesystem import FakeFilesystem, FakeFile
 
 from fabric.operations import _sudo_prefix
 from fabric.api import env, hide
@@ -264,7 +264,7 @@ class FakeSFTPServer(ssh.SFTPServerInterface):
         self.server = server
         files = self.server.files
         # Expand such that omitted, implied folders get added explicitly
-        for folder in missing_folders(files.keys()):
+        for folder in missing_folders(list(files.keys())):
             files[folder] = None
         self.files = files
 

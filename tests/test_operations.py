@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import os
 import shutil
@@ -28,8 +28,8 @@ if six.PY3:
     from .server import (server, PORT, RESPONSES, FILES, PASSWORDS, CLIENT_PRIVKEY,
                          USER, CLIENT_PRIVKEY_PASSPHRASE)
 else:
-    from utils import *
-    from server import (server, PORT, RESPONSES, FILES, PASSWORDS, CLIENT_PRIVKEY,
+    from .utils import *
+    from .server import (server, PORT, RESPONSES, FILES, PASSWORDS, CLIENT_PRIVKEY,
                         USER, CLIENT_PRIVKEY_PASSPHRASE)
 
 #
@@ -492,7 +492,7 @@ class TestFileTransfers(FabricTest):
         """
         with hide('everything'):
             get('tree', self.tmpdir)
-        leaves = list(filter(lambda x: x[0].startswith('/tree'), FILES.items()))
+        leaves = list([x for x in list(FILES.items()) if x[0].startswith('/tree')])
         for path, contents in leaves:
             eq_contents(self.path(path[1:]), contents)
 
@@ -505,7 +505,7 @@ class TestFileTransfers(FabricTest):
         try:
             with hide('everything'):
                 get('tree')
-            leaves = list(filter(lambda x: x[0].startswith('/tree'), FILES.items()))
+            leaves = list([x for x in list(FILES.items()) if x[0].startswith('/tree')])
             for path, contents in leaves:
                 path = os.path.join(dirname, path[1:])
                 eq_contents(path, contents)
@@ -610,7 +610,7 @@ class TestFileTransfers(FabricTest):
     @server(port=2201)
     def test_get_from_multiple_servers(self):
         ports = [2200, 2201]
-        hosts = list(map(lambda x: '127.0.0.1:%s' % x, ports))
+        hosts = list(['127.0.0.1:%s' % x for x in ports])
         with settings(all_hosts=hosts):
             for port in ports:
                 with settings(
@@ -706,7 +706,7 @@ class TestFileTransfers(FabricTest):
         with hide('everything'):
             retval = get('tree', d)
         files = ['file1.txt', 'file2.txt', 'subfolder/file3.txt']
-        eq_(list(map(lambda x: os.path.join(d, 'tree', x), files)), retval)
+        eq_(list([os.path.join(d, 'tree', x) for x in files]), retval)
 
     @server()
     def test_get_returns_none_for_stringio(self):

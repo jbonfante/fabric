@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import os
 import sys
@@ -16,8 +16,8 @@ if six.PY3:
     from .utils import mock_streams, FabricTest
     from .server import server
 else:
-    from utils import mock_streams, FabricTest
-    from server import server
+    from .utils import mock_streams, FabricTest
+    from .server import server
 
 #
 # cd()

@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 from functools import wraps
 import inspect
@@ -14,6 +14,7 @@ from fabric.task_utils import crawl, merge, parse_kwargs
 from fabric.exceptions import NetworkError
 
 from six import iteritems
+import collections
 
 if sys.version_info[:2] == (2, 5):
     # Python 2.5 inspect.getargspec returns a tuple
@@ -196,10 +197,7 @@ def requires_parallel(task):
 
 
 def _parallel_tasks(commands_to_run):
-    return any(list(map(
-        lambda x: requires_parallel(crawl(x[0], state.commands)),
-        commands_to_run
-    )))
+    return any(list([requires_parallel(crawl(x[0], state.commands)) for x in commands_to_run]))
 
 
 def _execute(task, host, my_env, args, kwargs, jobs, queue, multiprocessing):
@@ -316,7 +314,7 @@ def execute(task, *args, **kwargs):
     my_env = {'clean_revert': True}
     results = {}
     # Obtain task
-    is_callable = callable(task)
+    is_callable = isinstance(task, collections.Callable)
     if not (is_callable or _is_task(task)):
         # Assume string, set env.command to it
         my_env['command'] = task

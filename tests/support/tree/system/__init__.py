@@ -3,7 +3,7 @@ import six
 if six.PY3:
     from . import debian
 else:
-    import debian
+    from . import debian
 
 
 @task

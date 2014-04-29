@@ -2,7 +2,7 @@
 Classes and subroutines dealing with network connections and related topics.
 """
 
-from __future__ import with_statement, print_function
+
 
 from functools import wraps
 import getpass
@@ -390,7 +390,7 @@ def connect(user, host, port, cache, seek_gateway=True):
     if PY3:
         from .state import env, output
     else:
-        from state import env, output
+        from .state import env, output
 
     #
     # Initialization
@@ -639,8 +639,8 @@ def needs_host(func):
             except NameError:
                 pass
             handle_prompt_abort("the target host connection string")
-            host_string = input("No hosts found. Please specify (single)"
-                                " host string for connection: ")
+            host_string = eval(input("No hosts found. Please specify (single)"
+                                " host string for connection: "))
             env.update(to_dict(host_string))
         return func(*args, **kwargs)
     host_prompting_wrapper.undecorated = func

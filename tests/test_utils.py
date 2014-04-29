@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import sys
 from unittest import TestCase
@@ -17,7 +17,7 @@ from six import PY3, b
 if PY3:
     from .utils import mock_streams, aborts, FabricTest, assert_contains
 else:
-    from utils import mock_streams, aborts, FabricTest, assert_contains
+    from .utils import mock_streams, aborts, FabricTest, assert_contains
 
 
 @mock_streams('stderr')

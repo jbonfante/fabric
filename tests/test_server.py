@@ -16,7 +16,7 @@ import six
 if six.PY3:
     from .server import FakeSFTPServer
 else:
-    from server import FakeSFTPServer
+    from .server import FakeSFTPServer
 
 
 class AttrHolder(object):
@@ -95,7 +95,7 @@ def test_list_folder():
         # not "no files found"
         ok_(results != ssh.SFTP_NO_SUCH_FILE)
         # Grab filename from SFTPAttribute objects in result
-        output = list(map(lambda x: x.filename, results))
+        output = list([x.filename for x in results])
         # Yield test generator
         eq_.description = "list_folder: %s" % desc
         yield eq_, set(expected), set(output)

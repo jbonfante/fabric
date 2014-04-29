@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import copy
 from functools import partial
@@ -32,7 +32,7 @@ from fabric.task_utils import _crawl, crawl, merge
 if six.PY3:
     from .utils import mock_streams, eq_, FabricTest, fabfile, path_prefix, aborts
 else:
-    from utils import mock_streams, eq_, FabricTest, fabfile, path_prefix, aborts
+    from .utils import mock_streams, eq_, FabricTest, fabfile, path_prefix, aborts
 
 
 # Stupid load_fabfile wrapper to hide newly added return value.
