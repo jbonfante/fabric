@@ -1,14 +1,14 @@
 """
 Convenience decorators for use in fabfiles.
 """
-from __future__ import with_statement
+
 
 import types
 from functools import wraps
 
 from Crypto import Random
 
-from fabric import tasks
+from . import tasks
 from .context_managers import settings
 
 
@@ -28,7 +28,7 @@ def task(*args, **kwargs):
     .. versionchanged:: 1.5
         Added the ``name`` keyword argument.
 
-    .. seealso:: `~fabric.docs.unwrap_tasks`, `~fabric.tasks.WrappedCallableTask`
+    .. seealso:: `~.docs.unwrap_tasks`, `~.tasks.WrappedCallableTask`
     """
     invoked = bool(not args or kwargs)
     task_class = kwargs.pop("task_class", tasks.WrappedCallableTask)
@@ -53,7 +53,7 @@ def _list_annotating_decorator(attribute, *values):
             return func(*args, **kwargs)
         _values = values
         # Allow for single iterable argument as well as *args
-        if len(_values) == 1 and not isinstance(_values[0], basestring):
+        if len(_values) == 1 and not isinstance(_values[0], str):
             _values = _values[0]
         setattr(inner_decorator, attribute, list(_values))
         # Don't replace @task new-style task objects with inner_decorator by
@@ -75,7 +75,7 @@ def hosts(*host_list):
         def my_func():
             pass
 
-    `~fabric.decorators.hosts` may be invoked with either an argument list
+    `~.decorators.hosts` may be invoked with either an argument list
     (``@hosts('host1')``, ``@hosts('host1', 'host2')``) or a single, iterable
     argument (``@hosts(['host1', 'host2'])``).
 
@@ -107,14 +107,14 @@ def roles(*role_list):
         def my_func():
             pass
 
-    As with `~fabric.decorators.hosts`, `~fabric.decorators.roles` may be
+    As with `~.decorators.hosts`, `~.decorators.roles` may be
     invoked with either an argument list or a single, iterable argument.
     Similarly, this decorator uses the same mechanism as
-    `~fabric.decorators.hosts` and simply sets ``<function>.roles``.
+    `~.decorators.hosts` and simply sets ``<function>.roles``.
 
     .. versionchanged:: 0.9.2
         Allow a single, iterable argument to be used (same as
-        `~fabric.decorators.hosts`).
+        `~.decorators.hosts`).
     """
     return _list_annotating_decorator('roles', *role_list)
 
@@ -149,8 +149,8 @@ def serial(func):
 
     This decorator takes precedence over the global value of :ref:`env.parallel
     <env-parallel>`. However, if a task is decorated with both
-    `~fabric.decorators.serial` *and* `~fabric.decorators.parallel`,
-    `~fabric.decorators.parallel` wins.
+    `~.decorators.serial` *and* `~.decorators.parallel`,
+    `~.decorators.parallel` wins.
 
     .. versionadded:: 1.3
     """
@@ -164,7 +164,7 @@ def parallel(pool_size=None):
     Forces the wrapped function to run in parallel, instead of sequentially.
 
     This decorator takes precedence over the global value of :ref:`env.parallel
-    <env-parallel>`. It also takes precedence over `~fabric.decorators.serial`
+    <env-parallel>`. It also takes precedence over `~.decorators.serial`
     if a task is decorated with both.
 
     .. versionadded:: 1.3
@@ -193,7 +193,7 @@ def parallel(pool_size=None):
 
 def with_settings(*arg_settings, **kw_settings):
     """
-    Decorator equivalent of ``fabric.context_managers.settings``.
+    Decorator equivalent of ``.context_managers.settings``.
 
     Allows you to wrap an entire function as if it was called inside a block
     with the ``settings`` context manager. This may be useful if you know you
@@ -206,7 +206,7 @@ def with_settings(*arg_settings, **kw_settings):
         def foo():
             ...
 
-    .. seealso:: `~fabric.context_managers.settings`
+    .. seealso:: `~.context_managers.settings`
     .. versionadded:: 1.1
     """
     def outer(func):

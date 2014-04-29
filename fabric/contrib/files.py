@@ -2,16 +2,16 @@
 Module providing easy API for working with remote files and folders.
 """
 
-from __future__ import with_statement
+
 
 import hashlib
 import tempfile
 import re
 import os
-from StringIO import StringIO
+from io import StringIO
 
-from fabric.api import *
-from fabric.utils import apply_lcwd
+from .api import *
+from .utils import apply_lcwd
 
 
 def exists(path, use_sudo=False, verbose=False):
@@ -69,7 +69,7 @@ def upload_template(filename, destination, context=None, use_jinja=False,
     """
     Render and upload a template text file to a remote host.
 
-    Returns the result of the inner call to `~fabric.operations.put` -- see its
+    Returns the result of the inner call to `~.operations.put` -- see its
     documentation for details.
 
     ``filename`` should be the path to a text file, which may contain `Python
@@ -90,7 +90,7 @@ def upload_template(filename, destination, context=None, use_jinja=False,
     user; specify ``use_sudo=True`` to use `sudo` instead.
 
     The ``mirror_local_mode`` and ``mode`` kwargs are passed directly to an
-    internal `~fabric.operations.put` call; please see its documentation for
+    internal `~.operations.put` call; please see its documentation for
     details on these two options.
 
     .. versionchanged:: 1.1
@@ -168,7 +168,7 @@ def sed(filename, before, after, limit='', use_sudo=False, backup='.bak',
     The ``shell`` argument will be eventually passed to `run`/`sudo`. It
     defaults to False in order to avoid problems with many nested levels of
     quotes and backslashes. However, setting it to True may help when using
-    ``~fabric.operations.cd`` to wrap explicit or implicit ``sudo`` calls.
+    ``~.operations.cd`` to wrap explicit or implicit ``sudo`` calls.
     (``cd`` by it's nature is a shell built-in, not a standalone command, so it
     should be called within a shell.)
 
@@ -325,7 +325,7 @@ def contains(filename, text, exact=False, use_sudo=False, escape=True,
     added.)
 
     The ``shell`` argument will be eventually passed to ``run/sudo``. See
-    description of the same argumnet in ``~fabric.contrib.sed`` for details.
+    description of the same argumnet in ``~.contrib.sed`` for details.
 
     .. versionchanged:: 1.0
         Swapped the order of the ``filename`` and ``text`` arguments to be
@@ -371,7 +371,7 @@ def append(filename, text, use_sudo=False, partial=False, escape=True,
     If ``use_sudo`` is True, will use `sudo` instead of `run`.
 
     The ``shell`` argument will be eventually passed to ``run/sudo``. See
-    description of the same argumnet in ``~fabric.contrib.sed`` for details.
+    description of the same argumnet in ``~.contrib.sed`` for details.
 
     .. versionchanged:: 0.9.1
         Added the ``partial`` keyword argument.
@@ -388,7 +388,7 @@ def append(filename, text, use_sudo=False, partial=False, escape=True,
     """
     func = use_sudo and sudo or run
     # Normalize non-list input to be a list
-    if isinstance(text, basestring):
+    if isinstance(text, str):
         text = [text]
     for line in text:
         regex = '^' + _escape_for_regex(line)  + ('' if partial else '$')

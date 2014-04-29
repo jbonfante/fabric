@@ -2,7 +2,7 @@
 Classes and subroutines dealing with network connections and related topics.
 """
 
-from __future__ import with_statement
+
 
 from functools import wraps
 import getpass
@@ -11,18 +11,18 @@ import re
 import time
 import socket
 import sys
-from StringIO import StringIO
+from .io import StringIO
 
 
-from fabric.auth import get_password, set_password
-from fabric.utils import abort, handle_prompt_abort, warn
-from fabric.exceptions import NetworkError
+from .auth import get_password, set_password
+from .utils import abort, handle_prompt_abort, warn
+from .exceptions import NetworkError
 
 try:
     import warnings
     warnings.simplefilter('ignore', DeprecationWarning)
     import paramiko as ssh
-except ImportError, e:
+except ImportError as e:
     import traceback
     traceback.print_exc()
     msg = """
@@ -52,7 +52,7 @@ def is_key_load_error(e):
 
 
 def _tried_enough(tries):
-    from fabric.state import env
+    from .state import env
     return tries >= env.connection_attempts
 
 
@@ -80,7 +80,7 @@ def get_gateway(host, port, cache, replace=False):
     :returns:
         A ``socket.socket``-like object, or ``None`` if none was created.
     """
-    from fabric.state import env, output
+    from .state import env, output
     sock = None
     proxy_command = ssh_config().get('proxycommand', None)
     if env.gateway:
@@ -88,7 +88,7 @@ def get_gateway(host, port, cache, replace=False):
         # ensure initial gateway connection
         if replace or gateway not in cache:
             if output.debug:
-                print "Creating new gateway connection to %r" % gateway
+                print("Creating new gateway connection to {}".format(gateway))
             cache[gateway] = connect(*normalize(gateway) + (cache, False))
         # now we should have an open gw connection and can ask it for a
         # direct-tcpip channel to the real target. (bypass cache's own
@@ -177,7 +177,7 @@ def ssh_config(host_string=None):
 
     May give an explicit host string as ``host_string``.
     """
-    from fabric.state import env
+    from .state import env
     dummy = {}
     if not env.use_ssh_config:
         return dummy
@@ -203,26 +203,26 @@ def key_filenames():
     to a list. Also performs ``os.path.expanduser`` expansion on any key
     filenames.
     """
-    from fabric.state import env
+    from .state import env
     keys = env.key_filename
     # For ease of use, coerce stringish key filename into list
-    if isinstance(env.key_filename, basestring) or env.key_filename is None:
+    if isinstance(env.key_filename, str) or env.key_filename is None:
         keys = [keys]
     # Strip out any empty strings (such as the default value...meh)
-    keys = filter(bool, keys)
+    keys = list(filter(bool, keys))
     # Honor SSH config
     conf = ssh_config()
     if 'identityfile' in conf:
         # Assume a list here as we require Paramiko 1.10+
         keys.extend(conf['identityfile'])
-    return map(os.path.expanduser, keys)
+    return list(map(os.path.expanduser, keys))
 
 
 def key_from_env(passphrase=None):
     """
     Returns a paramiko-ready key from a text string of a private key
     """
-    from fabric.state import env, output
+    from .state import env, output
 
     if 'key' in env:
         if output.debug:
@@ -235,7 +235,7 @@ def key_from_env(passphrase=None):
                 sys.stderr.write("Trying to load it as %s\n" % pkey_class)
             try:
                 return pkey_class.from_private_key(StringIO(env.key), passphrase)
-            except Exception, e:
+            except Exception as e:
                 # File is valid key, but is encrypted: raise it, this will
                 # cause cxn loop to prompt for passphrase & retry
                 if 'Private key file is encrypted' in e:
@@ -278,7 +278,7 @@ def normalize(host_string, omit_port=False):
     so, and will use them to fill in some default values or swap in hostname
     aliases.
     """
-    from fabric.state import env
+    from .state import env
     # Gracefully handle "empty" input by returning empty output
     if not host_string:
         return ('', '') if omit_port else ('', '', '')
@@ -329,7 +329,7 @@ def denormalize(host_string):
     If the user part is the default user, it is removed;
     if the port is port 22, it also is removed.
     """
-    from fabric.state import env
+    from .state import env
 
     r = parse_host_string(host_string)
     user = ''
@@ -388,7 +388,7 @@ def connect(user, host, port, cache, seek_gateway=True):
         Whether to try setting up a gateway socket for this connection. Used so
         the actual gateway connection can prevent recursion.
     """
-    from state import env, output
+    from .state import env, output
 
     #
     # Initialization
@@ -453,14 +453,14 @@ def connect(user, host, port, cache, seek_gateway=True):
         # BadHostKeyException corresponds to key mismatch, i.e. what on the
         # command line results in the big banner error about man-in-the-middle
         # attacks.
-        except ssh.BadHostKeyException, e:
+        except ssh.BadHostKeyException as e:
             raise NetworkError("Host key for %s did not match pre-existing key! Server's key was changed recently, or possible man-in-the-middle attack." % host, e)
         # Prompt for new password to try on auth failure
         except (
             ssh.AuthenticationException,
             ssh.PasswordRequiredException,
             ssh.SSHException
-        ), e:
+        ) as e:
             msg = str(e)
             # If we get SSHExceptionError and the exception message indicates
             # SSH protocol banner read failures, assume it's caused by the
@@ -529,11 +529,11 @@ def connect(user, host, port, cache, seek_gateway=True):
             print('')
             sys.exit(0)
         # Handle DNS error / name lookup failure
-        except socket.gaierror, e:
+        except socket.gaierror as e:
             raise NetworkError('Name lookup failed for %s' % host, e)
         # Handle timeouts and retries, including generic errors
         # NOTE: In 2.6, socket.error subclasses IOError
-        except socket.error, e:
+        except socket.error as e:
             not_timeout = type(e) is not socket.timeout
             giving_up = _tried_enough(tries)
             # Baseline error msg for when debug is off
@@ -592,7 +592,7 @@ def prompt_for_password(prompt=None, no_colon=False, stream=None):
     ``stream`` is the stream the prompt will be printed to; if not given,
     defaults to ``sys.stderr``.
     """
-    from fabric.state import env
+    from .state import env
     handle_prompt_abort("a connection or sudo password")
     stream = stream or sys.stderr
     # Construct prompt
@@ -628,13 +628,13 @@ def needs_host(func):
     commands, this decorator will also end up prompting the user once per
     command (in the case where multiple commands have no hosts set, of course.)
     """
-    from fabric.state import env
+    from .state import env
     @wraps(func)
     def host_prompting_wrapper(*args, **kwargs):
         while not env.get('host_string', False):
             handle_prompt_abort("the target host connection string")
-            host_string = raw_input("No hosts found. Please specify (single)"
-                                    " host string for connection: ")
+            host_string = eval(input("No hosts found. Please specify (single)"
+                                    " host string for connection: "))
             env.update(to_dict(host_string))
         return func(*args, **kwargs)
     host_prompting_wrapper.undecorated = func
@@ -648,9 +648,9 @@ def disconnect_all():
     Used at the end of ``fab``'s main loop, and also intended for use by
     library users.
     """
-    from fabric.state import connections, output
+    from .state import connections, output
     # Explicitly disconnect from all servers
-    for key in connections.keys():
+    for key in list(connections.keys()):
         if output.status:
             # Here we can't use the py3k print(x, end=" ")
             # because 2.5 backwards compatibility

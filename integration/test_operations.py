@@ -1,6 +1,6 @@
-from __future__ import with_statement
 
-from StringIO import StringIO
+
+from io import StringIO
 
 from fabric.api import run, path, put, sudo, abort, warn_only, env
 
@@ -38,7 +38,7 @@ class TestOperations(Integration):
         assert_mode(self.filepath, "755")
 
     def test_int_put_mode_works_ok_too(self):
-        put(StringIO("#!/bin/bash\necho hi"), self.filepath, mode=0755)
+        put(StringIO("#!/bin/bash\necho hi"), self.filepath, mode=0o755)
         assert_mode(self.filepath, "755")
 
     def _chown(self, target):

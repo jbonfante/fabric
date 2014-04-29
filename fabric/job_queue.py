@@ -5,13 +5,13 @@ May use ``multiprocessing.Process`` or ``threading.Thread`` objects as queue
 items, though within Fabric itself only ``Process`` objects are used/supported.
 """
 
-from __future__ import with_statement
-import time
-import Queue
 
-from fabric.state import env
-from fabric.network import ssh
-from fabric.context_managers import settings
+import time
+import queue
+
+from .state import env
+from .network import ssh
+from .context_managers import settings
 
 
 class JobQueue(object):
@@ -188,7 +188,7 @@ class JobQueue(object):
             try:
                 datum = self._comms_queue.get_nowait()
                 results[datum['name']]['results'] = datum['result']
-            except Queue.Empty:
+            except queue.Empty:
                 break
 
 

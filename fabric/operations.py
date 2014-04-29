@@ -3,7 +3,7 @@
 Functions to be used in fabfiles and other non-core code, such as run()/sudo().
 """
 
-from __future__ import with_statement
+
 
 import os
 import os.path
@@ -15,14 +15,14 @@ import time
 from glob import glob
 from contextlib import closing, contextmanager
 
-from fabric.context_managers import (settings, char_buffered, hide,
+from .context_managers import (settings, char_buffered, hide,
     quiet as quiet_manager, warn_only as warn_only_manager)
-from fabric.io import output_loop, input_loop
-from fabric.network import needs_host, ssh, ssh_config
-from fabric.sftp import SFTP
-from fabric.state import env, connections, output, win32, default_channel
-from fabric.thread_handling import ThreadHandler
-from fabric.utils import (
+from .io import output_loop, input_loop
+from .network import needs_host, ssh, ssh_config
+from .sftp import SFTP
+from .state import env, connections, output, win32, default_channel
+from .thread_handling import ThreadHandler
+from .utils import (
     abort,
     error,
     handle_prompt_abort,
@@ -31,6 +31,7 @@ from fabric.utils import (
     warn,
     apply_lcwd
 )
+import collections
 
 
 def _shell_escape(string):
@@ -96,8 +97,8 @@ def require(*keys, **kwargs):
         Allow iterable ``provided_by`` values instead of just single values.
     """
     # If all keys exist and are non-empty, we're good, so keep going.
-    missing_keys = filter(lambda x: x not in env or (x in env and
-        isinstance(env[x], (dict, list, tuple, set)) and not env[x]), keys)
+    missing_keys = [x for x in keys if x not in env or (x in env and
+        isinstance(env[x], (dict, list, tuple, set)) and not env[x])]
     if not missing_keys:
         return
     # Pluralization
@@ -170,11 +171,11 @@ def prompt(text, key=None, default='', validate=None):
     hits ``Ctrl-C``).
 
     .. note::
-        `~fabric.operations.prompt` honors :ref:`env.abort_on_prompts
-        <abort-on-prompts>` and will call `~fabric.utils.abort` instead of
+        `~.operations.prompt` honors :ref:`env.abort_on_prompts
+        <abort-on-prompts>` and will call `~.utils.abort` instead of
         prompting if that flag is set to ``True``. If you want to block on user
         input regardless, try wrapping with
-        `~fabric.context_managers.settings`.
+        `~.context_managers.settings`.
 
     Examples::
 
@@ -212,16 +213,16 @@ def prompt(text, key=None, default='', validate=None):
     value = None
     while value is None:
         # Get input
-        value = raw_input(prompt_str) or default
+        value = eval(input(prompt_str)) or default
         # Handle validation
         if validate:
             # Callable
-            if callable(validate):
+            if isinstance(validate, collections.Callable):
                 # Callable validate() must raise an exception if validation
                 # fails.
                 try:
                     value = validate(value)
-                except Exception, e:
+                except Exception as e:
                     # Reset value so we stay in the loop
                     value = None
                     print("Validation failed for the following reason:")
@@ -256,7 +257,7 @@ def put(local_path=None, remote_path=None, use_sudo=False,
     """
     Upload one or more files to a remote host.
 
-    `~fabric.operations.put` returns an iterable containing the absolute file
+    `~.operations.put` returns an iterable containing the absolute file
     paths of all remote files uploaded. This iterable also exhibits a
     ``.failed`` attribute containing any local file paths which failed to
     upload (and may thus be used as a boolean test.) You may also check
@@ -271,7 +272,7 @@ def put(local_path=None, remote_path=None, use_sudo=False,
     ``open('path')`` or a ``StringIO`` instance.
 
     .. note::
-        In this case, `~fabric.operations.put` will attempt to read the entire
+        In this case, `~.operations.put` will attempt to read the entire
         contents of the file-like object by rewinding it using ``seek`` (and
         will use ``tell`` afterwards to preserve the previous file position).
 
@@ -297,7 +298,7 @@ def put(local_path=None, remote_path=None, use_sudo=False,
     Alternately, you may use the ``mode`` kwarg to specify an exact mode, in
     the same vein as ``os.chmod`` or the Unix ``chmod`` command.
 
-    `~fabric.operations.put` will honor `~fabric.context_managers.cd`, so
+    `~.operations.put` will honor `~.context_managers.cd`, so
     relative values in ``remote_path`` will be prepended by the current remote
     working directory, if applicable. Thus, for example, the below snippet
     would attempt to upload to ``/tmp/files/test.txt`` instead of
@@ -306,7 +307,7 @@ def put(local_path=None, remote_path=None, use_sudo=False,
         with cd('/tmp'):
             put('/path/to/local/test.txt', 'files')
 
-    Use of `~fabric.context_managers.lcd` will affect ``local_path`` in the
+    Use of `~.context_managers.lcd` will affect ``local_path`` in the
     same manner.
 
     Examples::
@@ -321,8 +322,8 @@ def put(local_path=None, remote_path=None, use_sudo=False,
         ``<file obj>``
     .. versionchanged:: 1.0
         Now honors the remote working directory as manipulated by
-        `~fabric.context_managers.cd`, and the local working directory as
-        manipulated by `~fabric.context_managers.lcd`.
+        `~.context_managers.cd`, and the local working directory as
+        manipulated by `~.context_managers.lcd`.
     .. versionchanged:: 1.0
         Now allows file-like objects in the ``local_path`` argument.
     .. versionchanged:: 1.0
@@ -341,7 +342,7 @@ def put(local_path=None, remote_path=None, use_sudo=False,
 
     # Test whether local_path is a path or a file-like object
     local_is_path = not (hasattr(local_path, 'read') \
-        and callable(local_path.read))
+        and isinstance(local_path.read, collections.Callable))
 
     ftp = SFTP(env.host_string)
 
@@ -398,7 +399,7 @@ def put(local_path=None, remote_path=None, use_sudo=False,
                     p = ftp.put(lpath, remote_path, use_sudo, mirror_local_mode,
                         mode, local_is_path, temp_dir)
                     remote_paths.append(p)
-            except Exception, e:
+            except Exception as e:
                 msg = "put() encountered an exception while uploading '%s'"
                 failure = lpath if local_is_path else "<StringIO>"
                 failed_local_paths.append(failure)
@@ -415,7 +416,7 @@ def get(remote_path, local_path=None):
     """
     Download one or more files from a remote host.
 
-    `~fabric.operations.get` returns an iterable containing the absolute paths
+    `~.operations.get` returns an iterable containing the absolute paths
     to all local files downloaded, which will be empty if ``local_path`` was a
     StringIO object (see below for more on using StringIO). This object will
     also exhibit a ``.failed`` attribute containing any remote file paths which
@@ -426,13 +427,13 @@ def get(remote_path, local_path=None):
     contain shell glob syntax, e.g. ``"/var/log/apache2/*.log"``, and will have
     tildes replaced by the remote home directory. Relative paths will be
     considered relative to the remote user's home directory, or the current
-    remote working directory as manipulated by `~fabric.context_managers.cd`.
+    remote working directory as manipulated by `~.context_managers.cd`.
     If the remote path points to a directory, that directory will be downloaded
     recursively.
 
     ``local_path`` is the local file path where the downloaded file or files
     will be stored. If relative, it will honor the local current working
-    directory as manipulated by `~fabric.context_managers.lcd`. It may be
+    directory as manipulated by `~.context_managers.lcd`. It may be
     interpolated, using standard Python dict-based interpolation, with the
     following variables:
 
@@ -467,7 +468,7 @@ def get(remote_path, local_path=None):
 
     .. warning::
         If your ``local_path`` argument does not contain ``%(host)s`` and your
-        `~fabric.operations.get` call runs against multiple hosts, your local
+        `~.operations.get` call runs against multiple hosts, your local
         files will be overwritten on each successive run!
 
     If ``local_path`` does not make use of the above variables (i.e. if it is a
@@ -486,8 +487,8 @@ def get(remote_path, local_path=None):
     .. note::
         This function will use ``seek`` and ``tell`` to overwrite the entire
         contents of the file-like object, in order to be consistent with the
-        behavior of `~fabric.operations.put` (which also considers the entire
-        file). However, unlike `~fabric.operations.put`, the file pointer will
+        behavior of `~.operations.put` (which also considers the entire
+        file). However, unlike `~.operations.put`, the file pointer will
         not be restored to its previous location, as that doesn't make as much
         sense here and/or may not even be possible.
 
@@ -498,8 +499,8 @@ def get(remote_path, local_path=None):
 
     .. versionchanged:: 1.0
         Now honors the remote working directory as manipulated by
-        `~fabric.context_managers.cd`, and the local working directory as
-        manipulated by `~fabric.context_managers.lcd`.
+        `~.context_managers.cd`, and the local working directory as
+        manipulated by `~.context_managers.lcd`.
     .. versionchanged:: 1.0
         Now allows file-like objects in the ``local_path`` argument.
     .. versionchanged:: 1.0
@@ -519,7 +520,7 @@ def get(remote_path, local_path=None):
 
     # Test whether local_path is a path or a file-like object
     local_is_path = not (hasattr(local_path, 'write') \
-        and callable(local_path.write))
+        and isinstance(local_path.write, collections.Callable))
 
     # Honor lcd() where it makes sense
     if local_is_path:
@@ -573,7 +574,7 @@ def get(remote_path, local_path=None):
                     if local_is_path:
                         local_files.append(result)
 
-        except Exception, e:
+        except Exception as e:
             failed_remote_files.append(remote_path)
             msg = "get() encountered an exception while downloading '%s'"
             error(message=msg % remote_path, exception=e)
@@ -636,10 +637,10 @@ def _prefix_commands(command, which):
     Prefixes ``command`` with all prefixes found in ``env.command_prefixes``.
 
     ``env.command_prefixes`` is a list of strings which is modified by the
-    `~fabric.context_managers.prefix` context manager.
+    `~.context_managers.prefix` context manager.
 
     This function also handles a special-case prefix, ``cwd``, used by
-    `~fabric.context_managers.cd`. The ``which`` kwarg should be a string,
+    `~.context_managers.cd`. The ``which`` kwarg should be a string,
     ``"local"`` or ``"remote"``, which will determine whether ``cwd`` or
     ``lcwd`` is used.
     """
@@ -663,8 +664,8 @@ def _prefix_env_vars(command, local=False):
     Prefixes ``command`` with any shell environment vars, e.g. ``PATH=foo ``.
 
     Currently, this only applies the PATH updating implemented in
-    `~fabric.context_managers.path` and environment variables from
-    `~fabric.context_managers.shell_env`.
+    `~.context_managers.path` and environment variables from
+    `~.context_managers.shell_env`.
 
     Will switch to using Windows style 'SET' commands when invoked by
     ``local()`` and on a Windows localhost.
@@ -695,7 +696,7 @@ def _prefix_env_vars(command, local=False):
 
         exports = ' '.join(
             '%s%s="%s"' % (set_cmd, k, v if k == 'PATH' else _shell_escape(v))
-            for k, v in env_vars.iteritems()
+            for k, v in list(env_vars.items())
         )
         shell_env_str = '%s%s && ' % (exp_cmd, exports)
     else:
@@ -845,13 +846,13 @@ def open_shell(command=None):
 
     It should be considered an easy way to work an interactive shell session
     into the middle of a Fabric script and is *not* a drop-in replacement for
-    `~fabric.operations.run`, which is also capable of interacting with the
+    `~.operations.run`, which is also capable of interacting with the
     remote end (albeit only while its given command is executing) and has much
     stronger programmatic abilities such as error handling and stdout/stderr
     capture.
 
-    Specifically, `~fabric.operations.open_shell` provides a better interactive
-    experience than `~fabric.operations.run`, but use of a full remote shell
+    Specifically, `~.operations.open_shell` provides a better interactive
+    experience than `~.operations.run`, but use of a full remote shell
     prevents Fabric from determining whether programs run within the shell have
     failed, and pollutes the stdout/stderr stream with shell output such as
     login banners, prompts and echoed stdin.
@@ -981,7 +982,7 @@ def run(command, shell=True, pty=True, combine_stderr=None, quiet=False,
     remote program (exhibited as the ``stderr`` attribute on this function's
     return value), you may set ``combine_stderr=False``. Doing so has a high
     chance of causing garbled output to appear on your terminal (though the
-    resulting strings returned by `~fabric.operations.run` will be properly
+    resulting strings returned by `~.operations.run` will be properly
     separated). For more info, please read :ref:`combine_streams`.
 
     To ignore non-zero return codes, specify ``warn_only=True``. To both ignore
@@ -1001,7 +1002,7 @@ def run(command, shell=True, pty=True, combine_stderr=None, quiet=False,
     If you want an exception raised when the remote program takes too long to
     run, specify ``timeout=N`` where ``N`` is an integer number of seconds,
     after which to time out. This will cause ``run`` to raise a
-    `~fabric.exceptions.CommandTimeout` exception.
+    `~.exceptions.CommandTimeout` exception.
 
     If you want to disable Fabric's automatic attempts at escaping quotes,
     dollar signs etc., specify ``shell_escape=False``.
@@ -1060,7 +1061,7 @@ def sudo(command, shell=True, pty=True, combine_stderr=None, user=None,
     ``group`` may likewise be strings or integers.
 
     You may set :ref:`env.sudo_user <sudo_user>` at module level or via
-    `~fabric.context_managers.settings` if you want multiple ``sudo`` calls to
+    `~.context_managers.settings` if you want multiple ``sudo`` calls to
     have the same ``user`` value. An explicit ``user`` argument will, of
     course, override this global setting.
 
@@ -1074,7 +1075,7 @@ def sudo(command, shell=True, pty=True, combine_stderr=None, user=None,
             sudo("whoami") # prints 'mysql'
 
     .. versionchanged:: 1.0
-        See the changed and added notes for `~fabric.operations.run`.
+        See the changed and added notes for `~.operations.run`.
 
     .. versionchanged:: 1.5
         Now honors :ref:`env.sudo_user <sudo_user>`.
@@ -1111,7 +1112,7 @@ def local(command, capture=False, shell=None):
     so this option is useful for setting that value to e.g.  ``/bin/bash``.
 
     `local` is not currently capable of simultaneously printing and
-    capturing output, as `~fabric.operations.run`/`~fabric.operations.sudo`
+    capturing output, as `~.operations.run`/`~.operations.sudo`
     do. The ``capture`` kwarg allows you to switch between printing and
     capturing as necessary, and defaults to ``False``.
 
@@ -1125,19 +1126,19 @@ def local(command, capture=False, shell=None):
     your terminal, but the return value will contain the captured
     stdout/stderr.
 
-    In either case, as with `~fabric.operations.run` and
-    `~fabric.operations.sudo`, this return value exhibits the ``return_code``,
+    In either case, as with `~.operations.run` and
+    `~.operations.sudo`, this return value exhibits the ``return_code``,
     ``stderr``, ``failed`` and ``succeeded`` attributes. See `run` for details.
 
-    `~fabric.operations.local` will honor the `~fabric.context_managers.lcd`
+    `~.operations.local` will honor the `~.context_managers.lcd`
     context manager, allowing you to control its current working directory
     independently of the remote end (which honors
-    `~fabric.context_managers.cd`).
+    `~.context_managers.cd`).
 
     .. versionchanged:: 1.0
         Added the ``succeeded`` and ``stderr`` attributes.
     .. versionchanged:: 1.0
-        Now honors the `~fabric.context_managers.lcd` context manager.
+        Now honors the `~.context_managers.lcd` context manager.
     .. versionchanged:: 1.0
         Changed the default value of ``capture`` from ``True`` to ``False``.
     """

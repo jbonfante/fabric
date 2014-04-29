@@ -12,8 +12,8 @@ local-to-your-fabfile Django installations. This is not as limiting as it
 sounds; for example, you can use Fabric as a remote "build" tool as well as
 using it locally. Imagine the following fabfile::
 
-    from fabric.api import run, local, hosts, cd
-    from fabric.contrib import django
+    from .api import run, local, hosts, cd
+    from .contrib import django
 
     django.project('myproject')
     from myproject.myapp.models import MyModel
@@ -37,8 +37,8 @@ it to obtain e.g. your database settings, and then use those when executing a
 remote (non-Fabric) command. This would allow you some degree of freedom even
 if Fabric is only installed locally::
 
-    from fabric.api import run
-    from fabric.contrib import django
+    from .api import run
+    from .contrib import django
 
     django.settings_module('myproject.settings')
     from django.conf import settings

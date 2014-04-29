@@ -1,17 +1,17 @@
 """
 Useful non-core functionality, e.g. functions composing multiple operations.
 """
-from __future__ import with_statement
+
 
 from os import getcwd, sep
 import os.path
 from datetime import datetime
 from tempfile import mkdtemp
 
-from fabric.network import needs_host, key_filenames, normalize
-from fabric.operations import local, run, sudo, put
-from fabric.state import env, output
-from fabric.context_managers import cd
+from .network import needs_host, key_filenames, normalize
+from .operations import local, run, sudo, put
+from .state import env, output
+from .context_managers import cd
 
 __all__ = ['rsync_project', 'upload_project']
 
@@ -76,7 +76,7 @@ def rsync_project(
       custom arguments or options to ``rsync``.
     * ``ssh_opts``: Like ``extra_opts`` but specifically for the SSH options
       string (rsync's ``--rsh`` flag.)
-    * ``capture``: Sent directly into an inner `~fabric.operations.local` call.
+    * ``capture``: Sent directly into an inner `~.operations.local` call.
     * ``upload``: a boolean controlling whether file synchronization is
       performed up or downstream. Upstream by default.
     * ``default_opts``: the default rsync options ``-pthrvz``, override if

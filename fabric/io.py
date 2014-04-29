@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import sys
 import time
@@ -6,12 +6,12 @@ import re
 import socket
 from select import select
 
-from fabric.state import env, output, win32
-from fabric.auth import get_password, set_password
-import fabric.network
-from fabric.network import ssh, normalize
-from fabric.utils import RingBuffer
-from fabric.exceptions import CommandTimeout
+from .state import env, output, win32
+from .auth import get_password, set_password
+from . import network
+from .network import ssh, normalize
+from .utils import RingBuffer
+from .exceptions import CommandTimeout
 
 
 if win32:
@@ -62,7 +62,7 @@ class OutputLooper(object):
         """
         Loop, reading from <chan>.<attr>(), writing to <stream> and buffering to <capture>.
 
-        Will raise `~fabric.exceptions.CommandTimeout` if network timeouts
+        Will raise `~.exceptions.CommandTimeout` if network timeouts
         continue to be seen past the defined ``self.timeout`` threshold.
         (Timeouts before then are considered part of normal short-timeout fast
         network reading; see Fabric issue #733 for background.)
@@ -194,7 +194,7 @@ class OutputLooper(object):
             # initial display "hides" just after the actually-displayed
             # prompt from the remote end.
             self.chan.input_enabled = False
-            password = fabric.network.prompt_for_password(
+            password = network.prompt_for_password(
                 prompt=" ", no_colon=True, stream=self.stream
             )
             self.chan.input_enabled = True
@@ -217,7 +217,7 @@ class OutputLooper(object):
         Iterate through the request prompts dict and return the response and
         original request if we find a match
         """
-        for tup in env.prompts.iteritems():
+        for tup in list(env.prompts.items()):
             if _endswith(self.capture, tup[0]):
                 return tup
         return None, None

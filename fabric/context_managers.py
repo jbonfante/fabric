@@ -29,7 +29,7 @@ Context managers for use with the ``with`` statement.
         with nested(cd('/path/to/app'), prefix('workon myvenv')):
             ...
 
-    Finally, note that `~fabric.context_managers.settings` implements
+    Finally, note that `~.context_managers.settings` implements
     ``nested`` itself -- see its API doc for details.
 """
 
@@ -38,9 +38,10 @@ import sys
 import socket
 import select
 
-from fabric.thread_handling import ThreadHandler
-from fabric.state import output, win32, connections, env
-from fabric import state
+from .thread_handling import ThreadHandler
+from .state import output, win32, connections, env
+from . import state
+import collections
 
 if not win32:
     import termios
@@ -76,7 +77,7 @@ def show(*groups):
     Context manager for setting the given output ``groups`` to True.
 
     ``groups`` must be one or more strings naming the output groups defined in
-    `~fabric.state.output`. The given groups will be set to True for the
+    `~.state.output`. The given groups will be set to True for the
     duration of the enclosed block, and restored to their previous value
     afterwards.
 
@@ -100,7 +101,7 @@ def hide(*groups):
     Context manager for setting the given output ``groups`` to False.
 
     ``groups`` must be one or more strings naming the output groups defined in
-    `~fabric.state.output`. The given groups will be set to False for the
+    `~.state.output`. The given groups will be set to False for the
     duration of the enclosed block, and restored to their previous value
     afterwards.
 
@@ -127,12 +128,12 @@ def _setenv(variables):
     This context manager is used internally by `settings` and is not intended
     to be used directly.
     """
-    if callable(variables):
+    if isinstance(variables, collections.Callable):
         variables = variables()
     clean_revert = variables.pop('clean_revert', False)
     previous = {}
     new = []
-    for key, value in variables.iteritems():
+    for key, value in list(variables.items()):
         if key in state.env:
             previous[key] = state.env[key]
         else:
@@ -142,7 +143,7 @@ def _setenv(variables):
         yield
     finally:
         if clean_revert:
-            for key, value in variables.iteritems():
+            for key, value in list(variables.items()):
                 # If the current env value for this key still matches the
                 # value we set it to beforehand, we are OK to revert it to the
                 # pre-block value.
@@ -253,7 +254,7 @@ def cd(path):
 
     .. note::
         `cd` only affects *remote* paths -- to modify *local* paths, use
-        `~fabric.context_managers.lcd`.
+        `~.context_managers.lcd`.
 
     Because use of `cd` affects all such invocations, any code making use of
     those operations, such as much of the ``contrib`` section, will also be
@@ -301,7 +302,7 @@ def cd(path):
         Applies to `get` and `put` in addition to the command-running
         operations.
 
-    .. seealso:: `~fabric.context_managers.lcd`
+    .. seealso:: `~.context_managers.lcd`
     """
     return _change_cwd('cwd', path)
 
@@ -310,10 +311,10 @@ def lcd(path):
     """
     Context manager for updating local current working directory.
 
-    This context manager is identical to `~fabric.context_managers.cd`, except
+    This context manager is identical to `~.context_managers.cd`, except
     that it changes a different env var (`lcwd`, instead of `cwd`) and thus
-    only affects the invocation of `~fabric.operations.local` and the local
-    arguments to `~fabric.operations.get`/`~fabric.operations.put`.
+    only affects the invocation of `~.operations.local` and the local
+    arguments to `~.operations.get`/`~.operations.put`.
 
     Relative path arguments are relative to the local user's current working
     directory, which will vary depending on where Fabric (or Fabric-using code)
@@ -371,7 +372,7 @@ def prefix(command):
     """
     Prefix all wrapped `run`/`sudo` commands with given command plus ``&&``.
 
-    This is nearly identical to `~fabric.operations.cd`, except that nested
+    This is nearly identical to `~.operations.cd`, except that nested
     invocations append to a list of command strings instead of modifying a
     single string.
 
@@ -390,7 +391,7 @@ def prefix(command):
 
         $ workon myvenv && ./manage.py syncdb
 
-    This context manager is compatible with `~fabric.context_managers.cd`, so
+    This context manager is compatible with `~.context_managers.cd`, so
     if your virtualenv doesn't ``cd`` in its ``postactivate`` script, you could
     do the following::
 
@@ -405,7 +406,7 @@ def prefix(command):
         $ cd /path/to/app && workon myvenv && ./manage.py loaddata myfixture
 
     Finally, as alluded to near the beginning,
-    `~fabric.context_managers.prefix` may be nested if desired, e.g.::
+    `~.context_managers.prefix` may be nested if desired, e.g.::
 
         with prefix('workon myenv'):
             run('ls')
@@ -450,7 +451,7 @@ def shell_env(**kw):
         with shell_env(ZMQ_DIR='/home/user/local'):
             run('pip install pyzmq')
 
-    As with `~fabric.context_managers.prefix`, this effectively turns the
+    As with `~.context_managers.prefix`, this effectively turns the
     ``run`` command into::
 
         $ export ZMQ_DIR='/home/user/local' && pip install pyzmq
@@ -458,7 +459,7 @@ def shell_env(**kw):
     Multiple key-value pairs may be given simultaneously.
 
     .. note::
-        If used to affect the behavior of `~fabric.operations.local` when
+        If used to affect the behavior of `~.operations.local` when
         running from a Windows localhost, ``SET`` commands will be used to
         implement this feature.
     """
@@ -532,21 +533,23 @@ def remote_tunnel(remote_port, local_port=None, local_host="localhost",
     channels = []
     threads = []
 
-    def accept(channel, (src_addr, src_port), (dest_addr, dest_port)):
+    def accept(channel, xxx_todo_changeme, xxx_todo_changeme1):
+        (src_addr, src_port) = xxx_todo_changeme
+        (dest_addr, dest_port) = xxx_todo_changeme1
         channels.append(channel)
         sock = socket.socket()
         sockets.append(sock)
 
         try:
             sock.connect((local_host, local_port))
-        except Exception, e:
-            print "[%s] rtunnel: cannot connect to %s:%d (from local)" % (env.host_string, local_host, local_port)
+        except Exception as e:
+            print("{} rtunnel: cannot connect to {}:{} (from local)".format(env.host_string, local_host, local_port))
             chan.close()
             return
 
-        print "[%s] rtunnel: opened reverse tunnel: %r -> %r -> %r"\
-              % (env.host_string, channel.origin_addr,
-                 channel.getpeername(), (local_host, local_port))
+        print("{} rtunnel: opened reverse tunnel: {} -> {} -> {}"\
+              .format(env.host_string, channel.origin_addr,
+                 channel.getpeername(), (local_host, local_port)))
 
         th = ThreadHandler('fwd', _forwarder, channel, sock)
         threads.append(th)
@@ -584,8 +587,8 @@ quiet.__doc__ = """
 
     .. seealso::
         :ref:`env.warn_only <warn_only>`,
-        `~fabric.context_managers.settings`,
-        `~fabric.context_managers.hide`
+        `~.context_managers.settings`,
+        `~.context_managers.hide`
 
     .. versionadded:: 1.5
 """
@@ -597,6 +600,6 @@ warn_only.__doc__ = """
 
     .. seealso::
         :ref:`env.warn_only <warn_only>`,
-        `~fabric.context_managers.settings`,
-        `~fabric.context_managers.quiet`
+        `~.context_managers.settings`,
+        `~.context_managers.quiet`
 """

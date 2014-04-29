@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 from contextlib import contextmanager
 from fudge import Fake, patched_context, with_fakes
@@ -39,7 +39,7 @@ class TestWrappedCallableTask(unittest.TestCase):
             self.fail(msg)
 
     def test_passes_unused_kwargs_to_parent(self):
-        random_range = range(random.randint(1, 10))
+        random_range = list(range(random.randint(1, 10)))
         kwargs = dict([("key_%s" % i, i) for i in random_range])
 
         def foo(): pass
@@ -167,7 +167,7 @@ def dict_contains(superset, subset):
     """
     Assert that all key/val pairs in dict 'subset' also exist in 'superset'
     """
-    for key, value in subset.iteritems():
+    for key, value in list(subset.items()):
         ok_(key in superset)
         eq_(superset[key], value)
 
@@ -344,7 +344,7 @@ class TestExecute(FabricTest):
         Networked but serial tasks should return per-host-string dict
         """
         ports = [2200, 2201]
-        hosts = map(lambda x: '127.0.0.1:%s' % x, ports)
+        hosts = ['127.0.0.1:%s' % x for x in ports]
         def task():
             run("ls /simple")
             return "foo"
@@ -433,14 +433,14 @@ class TestExecuteEnvInteractions(FabricTest):
             'hosts': [],
             'host_string': None
         }
-        for key, value in assertions.items():
+        for key, value in list(assertions.items()):
             eq_(env[key], value)
         # Run
         with hide('everything'):
             result = execute(mytask)
         eq_(len(result), 2)
         # Post-assertions
-        for key, value in assertions.items():
+        for key, value in list(assertions.items()):
             eq_(env[key], value)
 
     @server()

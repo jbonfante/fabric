@@ -1,17 +1,18 @@
-from __future__ import with_statement
+
 
 from functools import wraps
 import inspect
 import sys
 import textwrap
 
-from fabric import state
-from fabric.utils import abort, warn, error
-from fabric.network import to_dict, normalize_to_string, disconnect_all
-from fabric.context_managers import settings
-from fabric.job_queue import JobQueue
-from fabric.task_utils import crawl, merge, parse_kwargs
-from fabric.exceptions import NetworkError
+from . import state
+from .utils import abort, warn, error
+from .network import to_dict, normalize_to_string, disconnect_all
+from .context_managers import settings
+from .job_queue import JobQueue
+from .task_utils import crawl, merge, parse_kwargs
+from .exceptions import NetworkError
+import collections
 
 if sys.version_info[:2] == (2, 5):
     # Python 2.5 inspect.getargspec returns a tuple
@@ -70,7 +71,7 @@ class Task(object):
     Instances of subclasses will be treated as valid tasks when present in
     fabfiles loaded by the :doc:`fab </usage/fab>` tool.
 
-    For details on how to implement and use `~fabric.tasks.Task` subclasses,
+    For details on how to implement and use `~.tasks.Task` subclasses,
     please see the usage documentation on :ref:`new-style tasks
     <new-style-tasks>`.
 
@@ -119,7 +120,7 @@ class Task(object):
         # from the CLI or from module-level code). This will be the empty list
         # if these have not been set -- which is fine, this method should
         # return an empty list if no hosts have been set anywhere.
-        env_vars = map(_get_list(env), "hosts roles exclude_hosts".split())
+        env_vars = list(map(_get_list(env), "hosts roles exclude_hosts".split()))
         env_vars.append(roledefs)
         return merge(*env_vars)
 
@@ -143,11 +144,11 @@ class WrappedCallableTask(Task):
     """
     Wraps a given callable transparently, while marking it as a valid Task.
 
-    Generally used via `~fabric.decorators.task` and not directly.
+    Generally used via `~.decorators.task` and not directly.
 
     .. versionadded:: 1.1
 
-    .. seealso:: `~fabric.docs.unwrap_tasks`, `~fabric.decorators.task`
+    .. seealso:: `~.docs.unwrap_tasks`, `~.decorators.task`
     """
     def __init__(self, callable, *args, **kwargs):
         super(WrappedCallableTask, self).__init__(*args, **kwargs)
@@ -194,10 +195,7 @@ def requires_parallel(task):
 
 
 def _parallel_tasks(commands_to_run):
-    return any(map(
-        lambda x: requires_parallel(crawl(x[0], state.commands)),
-        commands_to_run
-    ))
+    return any([requires_parallel(crawl(x[0], state.commands)) for x in commands_to_run])
 
 
 def _execute(task, host, my_env, args, kwargs, jobs, queue, multiprocessing):
@@ -231,7 +229,7 @@ def _execute(task, host, my_env, args, kwargs, jobs, queue, multiprocessing):
                 key = normalize_to_string(state.env.host_string)
                 state.connections.pop(key, "")
                 submit(task.run(*args, **kwargs))
-            except BaseException, e: # We really do want to capture everything
+            except BaseException as e: # We really do want to capture everything
                 # SystemExit implies use of abort(), which prints its own
                 # traceback, host info etc -- so we don't want to double up
                 # on that. For everything else, though, we need to make
@@ -277,8 +275,8 @@ def execute(task, *args, **kwargs):
 
     The task will then be executed once per host in its host list, which is
     (again) assembled in the same manner as CLI-specified tasks: drawing from
-    :option:`-H`, :ref:`env.hosts <hosts>`, the `~fabric.decorators.hosts` or
-    `~fabric.decorators.roles` decorators, and so forth.
+    :option:`-H`, :ref:`env.hosts <hosts>`, the `~.decorators.hosts` or
+    `~.decorators.roles` decorators, and so forth.
 
     ``host``, ``hosts``, ``role``, ``roles`` and ``exclude_hosts`` kwargs will
     be stripped out of the final call, and used to set the task's host list, as
@@ -314,7 +312,7 @@ def execute(task, *args, **kwargs):
     my_env = {'clean_revert': True}
     results = {}
     # Obtain task
-    is_callable = callable(task)
+    is_callable = isinstance(task, collections.Callable)
     if not (is_callable or _is_task(task)):
         # Assume string, set env.command to it
         my_env['command'] = task
@@ -367,7 +365,7 @@ def execute(task, *args, **kwargs):
                     task, host, my_env, args, new_kwargs, jobs, queue,
                     multiprocessing
                 )
-            except NetworkError, e:
+            except NetworkError as e:
                 results[host] = e
                 # Backwards compat test re: whether to use an exception or
                 # abort
@@ -391,7 +389,7 @@ def execute(task, *args, **kwargs):
             # This prevents Fabric from continuing on to any other tasks.
             # Otherwise, pull in results from the child run.
             ran_jobs = jobs.run()
-            for name, d in ran_jobs.iteritems():
+            for name, d in list(ran_jobs.items()):
                 if d['exit_code'] != 0:
                     if isinstance(d['results'], BaseException):
                         error(err, exception=d['results'])

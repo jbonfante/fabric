@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 
 import hashlib
 import os
@@ -7,9 +7,9 @@ import stat
 import re
 from fnmatch import filter as fnfilter
 
-from fabric.state import output, connections, env
-from fabric.utils import warn
-from fabric.context_managers import settings
+from .state import output, connections, env
+from .utils import warn
+from .context_managers import settings
 
 
 def _format_local(local_path, local_is_path):
@@ -54,7 +54,7 @@ class SFTP(object):
         return True
 
     def glob(self, path):
-        from fabric.state import win32
+        from .state import win32
         dirpart, pattern = os.path.split(path)
         rlist = self.ftp.listdir(dirpart)
 
@@ -79,7 +79,7 @@ class SFTP(object):
             # Note that listdir and error are globals in this module due to
             # earlier import-*.
             names = self.ftp.listdir(top)
-        except Exception, err:
+        except Exception as err:
             if onerror is not None:
                 onerror(err)
             return
@@ -103,7 +103,7 @@ class SFTP(object):
             yield top, dirs, nondirs
 
     def mkdir(self, path, use_sudo):
-        from fabric.api import sudo, hide
+        from .api import sudo, hide
         if use_sudo:
             with hide('everything'):
                 sudo('mkdir %s' % path)
@@ -197,7 +197,7 @@ class SFTP(object):
 
     def put(self, local_path, remote_path, use_sudo, mirror_local_mode, mode,
         local_is_path, temp_dir):
-        from fabric.api import sudo, hide
+        from .api import sudo, hide
         pre = self.ftp.getcwd()
         pre = pre if pre else ''
         if local_is_path and self.isdir(remote_path):
@@ -231,13 +231,13 @@ class SFTP(object):
         if (local_is_path and mirror_local_mode) or (mode is not None):
             lmode = os.stat(local_path).st_mode if mirror_local_mode else mode
             # Cast to octal integer in case of string
-            if isinstance(lmode, basestring):
+            if isinstance(lmode, str):
                 lmode = int(lmode, 8)
-            lmode = lmode & 07777
+            lmode = lmode & 0o7777
             rmode = rattrs.st_mode
             # Only bitshift if we actually got an rmode
             if rmode is not None:
-                rmode = (rmode & 07777)
+                rmode = (rmode & 0o7777)
             if lmode != rmode:
                 if use_sudo:
                     with hide('everything'):

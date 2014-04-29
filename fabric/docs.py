@@ -1,11 +1,11 @@
-from fabric.tasks import WrappedCallableTask
+from .tasks import WrappedCallableTask
 
 
 def unwrap_tasks(module, hide_nontasks=False):
     """
     Replace task objects on ``module`` with their wrapped functions instead.
 
-    Specifically, look for instances of `~fabric.tasks.WrappedCallableTask` and
+    Specifically, look for instances of `~.tasks.WrappedCallableTask` and
     replace them with their ``.wrapped`` attribute (the original decorated
     function.)
 
@@ -18,7 +18,7 @@ def unwrap_tasks(module, hide_nontasks=False):
 
     For example, at the bottom of your ``conf.py``::
 
-        from fabric.docs import unwrap_tasks
+        from .docs import unwrap_tasks
         import my_package.my_fabfile
         unwrap_tasks(my_package.my_fabfile)
 
@@ -35,10 +35,10 @@ def unwrap_tasks(module, hide_nontasks=False):
 
     .. versionadded: 1.5
 
-    .. seealso:: `~fabric.tasks.WrappedCallableTask`, `~fabric.decorators.task`
+    .. seealso:: `~.tasks.WrappedCallableTask`, `~.decorators.task`
     """
     set_tasks = []
-    for name, obj in vars(module).items():
+    for name, obj in list(vars(module).items()):
         if isinstance(obj, WrappedCallableTask):
             setattr(module, obj.name, obj.wrapped)
             # Handle situation where a task's real name shadows a builtin.
@@ -47,7 +47,7 @@ def unwrap_tasks(module, hide_nontasks=False):
             set_tasks.append(obj.name)
             # In the same vein, "privately" named wrapped functions whose task
             # name is public, needs to get renamed so autodoc picks it up.
-            obj.wrapped.func_name = obj.name
+            obj.wrapped.__name__ = obj.name
         else:
             if name in set_tasks:
                 continue
