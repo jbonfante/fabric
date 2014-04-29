@@ -34,7 +34,7 @@ Context managers for use with the ``with`` statement.
 """
 
 from contextlib import contextmanager
-from contextlib2 import ExitStack
+from contextlib import ExitStack
 import sys
 import socket
 import select
